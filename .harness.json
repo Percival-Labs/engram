@@ -1,0 +1,8 @@
+{
+  "name": "Engram",
+  "type": "project",
+  "status": "active",
+  "phase": "building",
+  "focus": "MVP: rename, bundle command, npm publish, MCP server",
+  "description": "Personal AI infrastructure — the stable layer between raw AI model and useful AI system"
+}

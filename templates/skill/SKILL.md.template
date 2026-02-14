@@ -1,0 +1,31 @@
+---
+name: {{SKILL_NAME}}
+description: [What this skill does]. USE WHEN [intent triggers]. [Additional capabilities].
+---
+
+# {{SKILL_NAME}}
+
+[Brief description of what this skill does and when to use it]
+
+## Workflow Routing
+
+| Workflow | Trigger | File |
+|----------|---------|------|
+| **Example** | "example trigger phrase" | `Workflows/Example.md` |
+
+## Examples
+
+**Example 1: [Common use case]**
+```
+User: "[Typical user request]"
+-> Invokes Example workflow
+-> [What skill does]
+-> [What user gets back]
+```
+
+**Example 2: [Another use case]**
+```
+User: "[Another typical request]"
+-> [Process]
+-> [Output]
+```

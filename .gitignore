@@ -1,0 +1,14 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.DS_Store
+.env
+engram-bundle/
+
+# Test artifacts
+$HOME/
+
+# Internal planning docs
+PRODUCT-SPEC.md
+PROJECT-SPEC.md
+PL-AGENT-HANDOFF.md

@@ -1,0 +1,200 @@
+# Engram - Security Patterns
+# Single source of truth for all security validation
+# Used by SecurityValidator.hook.ts
+#
+# SETUP:
+# 1. Copy this file to USER/SECURITY/patterns.yaml in your framework directory
+# 2. Customize patterns to match your environment
+# 3. The SecurityValidator will prefer your custom copy over this default
+#
+# PHILOSOPHY:
+# Permissive by default. Only block operations that are catastrophic and
+# irreversible. Prompt for confirmation on dangerous-but-legitimate operations.
+# Log suspicious activity but allow it to proceed.
+#
+# PATTERN SYNTAX:
+# - Patterns use JavaScript regex syntax
+# - .* matches any characters
+# - Patterns are case-insensitive
+# - If a pattern is invalid regex, it falls back to literal substring match
+#
+# PATH VARIABLES:
+# - ~ expands to the user's home directory
+# - ** matches any path segments (glob-style)
+# - * matches any single path segment
+---
+version: "1.0"
+last_updated: "2026-02-13"
+
+# Philosophy: Permissive by default, block only catastrophic
+philosophy:
+  mode: permissive
+  principle: "Alert on suspicious, block only catastrophic"
+
+# ========================================
+# BASH COMMAND PATTERNS
+# ========================================
+bash:
+  # BLOCKED - Catastrophic/irreversible (exit 2)
+  # These operations are NEVER allowed regardless of context.
+  # The hook will exit with code 2, which hard-blocks the tool call.
+  blocked:
+    # Filesystem destruction
+    - pattern: "rm -rf /"
+      reason: "Filesystem destruction"
+    - pattern: "rm -rf ~"
+      reason: "Home directory destruction"
+    - pattern: "sudo rm -rf /"
+      reason: "Filesystem destruction with sudo"
+    - pattern: "sudo rm -rf ~"
+      reason: "Home directory destruction with sudo"
+
+    # Disk operations (macOS)
+    - pattern: "diskutil eraseDisk"
+      reason: "Disk destruction"
+    - pattern: "diskutil zeroDisk"
+      reason: "Disk destruction"
+    - pattern: "diskutil partitionDisk"
+      reason: "Disk partitioning"
+    - pattern: "diskutil apfs deleteContainer"
+      reason: "APFS container deletion"
+    - pattern: "diskutil apfs eraseVolume"
+      reason: "Volume destruction"
+
+    # Disk operations (Linux)
+    - pattern: "dd if=/dev/zero"
+      reason: "Disk overwrite"
+    - pattern: "mkfs"
+      reason: "Filesystem format"
+
+    # Repository destruction
+    - pattern: "gh repo delete"
+      reason: "Repository deletion"
+    - pattern: "gh repo edit --visibility public"
+      reason: "Repository exposure — may leak private code"
+
+  # CONFIRM - Dangerous but sometimes legitimate (exit 0 + JSON prompt)
+  # The user will be prompted to confirm before execution.
+  # These are operations that are valid in some contexts but risky.
+  confirm:
+    # Git operations — data loss risk
+    - pattern: "git push --force"
+      reason: "Force push can lose commits"
+    - pattern: "git push -f"
+      reason: "Force push can lose commits"
+    - pattern: "git push origin --force"
+      reason: "Force push can lose commits"
+    - pattern: "git push origin -f"
+      reason: "Force push can lose commits"
+    - pattern: "git reset --hard"
+      reason: "Loses uncommitted changes"
+
+    # Cloud — AWS resource deletion
+    - pattern: "aws s3 rm.*--recursive"
+      reason: "Bulk S3 deletion"
+    - pattern: "aws ec2 terminate"
+      reason: "EC2 instance termination"
+    - pattern: "aws rds delete"
+      reason: "RDS deletion"
+
+    # Cloud — GCP resource deletion
+    - pattern: "gcloud.*delete"
+      reason: "GCP resource deletion"
+
+    # Infrastructure as Code — destruction
+    - pattern: "terraform destroy"
+      reason: "Infrastructure destruction"
+    - pattern: "terraform apply.*-auto-approve"
+      reason: "Auto-approve bypasses review"
+    - pattern: "pulumi destroy"
+      reason: "Infrastructure destruction"
+
+    # Containers — data loss risk
+    - pattern: "docker system prune"
+      reason: "Container/image cleanup"
+    - pattern: "docker volume rm"
+      reason: "Volume data deletion"
+    - pattern: "kubectl delete namespace"
+      reason: "Namespace deletion"
+
+    # Database operations — data loss risk
+    - pattern: "DELETE FROM.*WHERE"
+      reason: "Database deletion (confirm scope)"
+    - pattern: "DROP DATABASE"
+      reason: "Database destruction"
+    - pattern: "DROP TABLE"
+      reason: "Table destruction"
+    - pattern: "TRUNCATE"
+      reason: "Table data destruction"
+
+  # ALERT - Suspicious but allowed (log only, no block)
+  # These are logged for security review but execution proceeds normally.
+  # Useful for audit trails and detecting unexpected patterns.
+  alert:
+    # Remote code execution patterns
+    - pattern: "curl.*\\|.*sh"
+      reason: "Piping curl to shell"
+    - pattern: "curl.*\\|.*bash"
+      reason: "Piping curl to bash"
+    - pattern: "wget.*\\|.*sh"
+      reason: "Piping wget to shell"
+    - pattern: "wget.*\\|.*bash"
+      reason: "Piping wget to bash"
+
+# ========================================
+# PATH PROTECTION
+# ========================================
+# Controls which files and directories the AI can access.
+# Uses glob-style patterns with ~ expansion.
+paths:
+  # ZERO ACCESS - Complete denial for all operations (read/write/delete)
+  # The AI cannot read, write, or delete these files under any circumstances.
+  # Protects cryptographic keys, credentials, and secrets.
+  zeroAccess:
+    - "~/.ssh/id_*"
+    - "~/.ssh/*.pem"
+    - "~/.aws/credentials"
+    - "~/.gnupg/private*"
+    - "**/credentials.json"
+    - "**/service-account*.json"
+
+  # READ ONLY - Can read but cannot modify or delete
+  # Useful for system configs and framework settings that should
+  # be human-edited only.
+  readOnly:
+    - "/etc/**"
+
+  # CONFIRM WRITE - Can read freely, writing requires confirmation
+  # The user will be prompted before any write to these paths.
+  # Protects environment files and SSH configs.
+  confirmWrite:
+    - "**/.env"
+    - "**/.env.*"
+    - "~/.ssh/*"
+
+  # NO DELETE - Can read and modify but cannot delete
+  # Protects critical infrastructure files from accidental removal.
+  noDelete:
+    - ".git/**"
+    - "LICENSE*"
+    - "README.md"
+
+# ========================================
+# SPECIAL PROJECT RULES
+# ========================================
+# Add project-specific security rules here.
+# Each project can define custom blocked, confirm, and alert patterns.
+#
+# Example:
+#
+# projects:
+#   my-private-app:
+#     path: "~/Projects/my-private-app"
+#     rules:
+#       - action: "block_git_push"
+#         reason: "Deploy via CI/CD only"
+#       - action: "require_confirmation"
+#         pattern: "npm publish"
+#         reason: "Verify version before publishing"
+#
+projects: {}

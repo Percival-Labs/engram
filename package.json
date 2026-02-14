@@ -1,0 +1,53 @@
+{
+  "name": "engram-harness",
+  "version": "0.1.0",
+  "description": "Personal AI infrastructure — the stable layer between raw AI model and useful AI system",
+  "type": "module",
+  "bin": {
+    "engram": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "bun build src/cli.ts --outdir dist --target node",
+    "dev": "bun run src/cli.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "files": [
+    "dist/",
+    "hooks/",
+    "skills/",
+    "templates/",
+    "README.md",
+    "LICENSE"
+  ],
+  "dependencies": {
+    "@inquirer/prompts": "^7.0.0",
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "commander": "^13.0.0",
+    "yaml": "^2.7.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AlanCarroll/engram"
+  },
+  "keywords": [
+    "ai",
+    "infrastructure",
+    "cli",
+    "claude-code",
+    "personal-ai",
+    "engram",
+    "ai-assistant"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
