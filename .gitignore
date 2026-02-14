@@ -3,6 +3,7 @@ dist/
 *.tsbuildinfo
 .DS_Store
 .env
+*.local
 engram-bundle/
 
 # Test artifacts

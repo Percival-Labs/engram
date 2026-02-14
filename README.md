@@ -1,145 +1,111 @@
 # Engram
 
-**Personal AI infrastructure — the stable layer between raw AI model and useful AI system.**
+**The AI Harness for Everyone** -- open-source personal AI infrastructure that turns any model into *your* AI.
 
-## The Rack Analogy
+Engram is the stable layer between a raw AI model and a useful AI system. It provides the structure -- skills, hooks, memory, security, personality -- so you can swap models without losing your setup. When a new model releases, your skills still work. Your memory persists. Your identity carries over.
 
-A server rack in a data center does not compute anything. It provides power, cooling, networking, and mounting. You can swap servers without rebuilding the data center. The rack is the stable infrastructure that makes everything else work.
+## Install
 
-Engram is a rack for AI. It does not care which model you use. It provides the structure -- skills, hooks, memory, security -- that turns a raw AI model into a reliable personal AI system.
+```bash
+npm install -g engram-harness
+```
 
-When a new model releases, an Engram-powered system absorbs it as a firmware update. Your skills do not change. Your hooks still fire. Your memory persists. Your identity carries over. The model is swappable. The infrastructure is permanent.
+Requires Node.js 20+.
+
+## Commands
+
+### `engram init`
+
+Scaffolds your personal AI infrastructure at `~/.claude/`. Creates identity files, starter skills, lifecycle hooks, memory directories, and a security validator -- everything needed to turn Claude Code into a personalized AI system.
+
+```bash
+engram init
+```
+
+### `engram bundle`
+
+Generates a portable setup package for platforms that don't support CLI (Claude.ai, Claude Desktop, ChatGPT). Downloads as a zip with instructions, personality config, skills, and memory templates.
+
+```bash
+engram bundle --for "YourName"
+```
+
+### `engram serve`
+
+Starts an MCP (Model Context Protocol) server that exposes your skills and memory as tools any MCP-compatible client can use.
+
+```bash
+engram serve
+```
+
+### `engram skill`
+
+Manages your skill library -- create new skills from templates, rebuild the skill index, or list what's installed.
+
+```bash
+engram skill create MyNewSkill
+engram skill index
+engram skill list
+```
 
 ## Architecture
 
-Engram organizes AI infrastructure into five layers:
+Engram organizes AI infrastructure into five composable layers:
 
 ```
-┌─────────────────────────────────────┐
-│  Layer 5: Agent Personalities       │  ← Who your AI is
-├─────────────────────────────────────┤
-│  Layer 4: Skills & Workflows        │  ← What your AI can do
-├─────────────────────────────────────┤
-│  Layer 3: Hooks & Events            │  ← When things happen
-├─────────────────────────────────────┤
-│  Layer 2: Memory & History          │  ← What your AI remembers
-├─────────────────────────────────────┤
-│  Layer 1: Security & Validation     │  ← What your AI guards against
-└─────────────────────────────────────┘
-              ↕ MODEL
-    (pluggable — Claude, GPT, Gemini, local)
+Layer 5: Agent Personalities    -- Who your AI is
+Layer 4: Skills & Workflows     -- What your AI can do
+Layer 3: Hooks & Events         -- When things happen
+Layer 2: Memory & History       -- What your AI remembers
+Layer 1: Security & Validation  -- What your AI guards against
+             |
+           MODEL (pluggable -- Claude, GPT, Gemini, local)
 ```
 
-Each layer is independent and composable. You can use all five or start with just one.
-
-## Quick Start
-
-### For Claude Code Users
-
-```bash
-# Install
-npx engram-harness init
-
-# Create your first skill
-engram skill create MyFirstSkill
-
-# Update the skill index
-engram skill index
-```
-
-### For Everyone Else (Claude Desktop, ChatGPT, Claude.ai)
-
-```bash
-# Generate a portable bundle
-npx engram-harness bundle --for "YourName"
-```
-
-This creates a folder you can upload to Claude Projects or paste into ChatGPT custom instructions. No CLI required after setup.
+Each layer is independent. Use all five or start with just one.
 
 ## What You Get
 
-After running `engram init`, your `~/.claude/` directory contains:
+After `engram init`, your `~/.claude/` directory contains:
 
 | File / Directory | Purpose |
 |------------------|---------|
-| `CLAUDE.md` | AI identity, skill registry, and global configuration |
+| `CLAUDE.md` | AI identity, skill registry, global config |
 | `context.md` | Your personal context (who you are, what you work on) |
 | `constitution.md` | Personality calibration (tunable YAML dials) |
 | `settings.json` | Runtime config with hook wiring |
 | `skills/` | 4 starter skills (Research, DoWork, Reflect, HelloWorld) |
 | `hooks/` | 3 lifecycle hooks (security, context loading, session summary) |
-| `MEMORY/` | Structured memory directories (work, learnings, state, security) |
+| `MEMORY/` | Structured memory directories |
 
-Everything is plain files. Markdown, YAML, JSON. No database. No cloud service. Human-readable, git-friendly, and portable.
+Everything is plain files. Markdown, YAML, JSON. No database. No cloud service. Human-readable, git-friendly, portable.
 
-## The 14 Founding Principles
+## Web Bundle Generator
 
-1. **Clear Thinking + Prompting is King** -- Clarity of intent bounds system quality
-2. **Scaffolding > Model** -- Architecture outlasts any single model release
-3. **As Deterministic as Possible** -- Same input, same output. Code over vibes.
-4. **Code Before Prompts** -- Write code to solve problems, prompts to orchestrate code
-5. **Spec / Test / Evals First** -- Define expected behavior before implementation
-6. **UNIX Philosophy** -- Do one thing well. Compose through standard interfaces.
-7. **ENG / SRE Principles** -- Observability, reliability, graceful degradation
-8. **CLI as Interface** -- Every operation is scriptable and automatable
-9. **Goal -> Code -> CLI -> Prompts -> Agents** -- The proper development pipeline
-10. **Meta / Self-Update System** -- The system can improve itself
-11. **Custom Skill Management** -- Skills are the organizational unit for all expertise
-12. **Custom History System** -- Memory compounds intelligence over time
-13. **Custom Agent Personalities** -- Identity is declarative, not emergent
-14. **Science as Cognitive Loop** -- Hypothesize, experiment, measure, learn
-
-Full details in [specs/Architecture.md](specs/Architecture.md).
-
-## Project Structure
-
-```
-engram/
-├── README.md
-├── LICENSE                          # MIT
-├── package.json
-├── src/                             # CLI source
-│   ├── cli.ts                       # Entry point (engram command)
-│   ├── commands/                    # CLI command implementations
-│   └── lib/                         # Shared utilities
-├── templates/                       # Scaffolding templates
-├── hooks/                           # Starter hooks
-│   ├── GreetingHook.hook.ts
-│   ├── LoadContext.hook.ts
-│   ├── SecurityValidator.hook.ts
-│   ├── SessionSummary.hook.ts
-│   └── lib/                         # Hook utilities
-├── skills/                          # Starter skills
-│   ├── Research/
-│   ├── DoWork/
-│   ├── Reflect/
-│   └── HelloWorld/
-├── specs/                           # Framework specifications
-└── docs/                            # Documentation
-```
+Don't use CLI? Visit the [Engram website](site/index.html) to generate a setup package through your browser. Fill in your name, tune personality sliders, and download a zip you can upload to Claude Projects or paste into ChatGPT custom instructions.
 
 ## Documentation
 
 | Document | Description |
 |----------|-------------|
-| [Getting Started](docs/GETTING-STARTED.md) | Installation, setup, and first session |
-| [Creating Skills](docs/CREATING-SKILLS.md) | How to build and register custom skills |
+| [Getting Started](docs/GETTING-STARTED.md) | Installation, setup, first session |
+| [Creating Skills](docs/CREATING-SKILLS.md) | Build and register custom skills |
 | [Writing Hooks](docs/WRITING-HOOKS.md) | Event-driven lifecycle hooks |
 | [Architecture Guide](docs/ARCHITECTURE-GUIDE.md) | The five-layer system in detail |
-| [Examples](docs/EXAMPLES.md) | Concrete examples of skills, hooks, and configurations |
-| [FAQ](docs/FAQ.md) | Common questions and answers |
+| [Examples](docs/EXAMPLES.md) | Skills, hooks, and configuration examples |
+| [FAQ](docs/FAQ.md) | Common questions |
 
 ## Contributing
 
-Contributions are welcome. To get started:
+Contributions welcome.
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/my-feature`)
 3. Read the relevant spec in `specs/` before making changes
 4. Follow existing conventions (TitleCase for skills, TypeScript for hooks)
-5. Submit a pull request with a clear description of what you changed and why
+5. Submit a pull request with a clear description
 
-For bug reports and feature requests, open an issue on GitHub.
+For bugs and feature requests, open an issue on GitHub.
 
 ## License
 

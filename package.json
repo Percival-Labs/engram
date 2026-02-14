@@ -1,7 +1,7 @@
 {
   "name": "engram-harness",
   "version": "0.1.0",
-  "description": "Personal AI infrastructure — the stable layer between raw AI model and useful AI system",
+  "description": "Engram — The AI Harness for Everyone. Personal AI infrastructure that turns any model into your AI.",
   "type": "module",
   "bin": {
     "engram": "./dist/cli.js"
