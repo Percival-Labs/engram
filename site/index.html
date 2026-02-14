@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Engram — Personal AI Infrastructure</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --border: #1e1e2e;
+      --text: #e4e4ef;
+      --text-muted: #8888a0;
+      --accent: #22d3ee;
+      --accent-hover: #67e8f9;
+      --accent-glow: rgba(34, 211, 238, 0.15);
+      --accent-dim: #0e7490;
+      --warm: #f59e0b;
+      --warm-hover: #fbbf24;
+      --warm-glow: rgba(245, 158, 11, 0.15);
+      --success: #34d399;
+      --radius: 12px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Hero */
+    .hero {
+      padding: 80px 0 48px;
+      text-align: center;
+    }
+
+    .hero h1 {
+      font-size: 3rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 16px;
+    }
+
+    .hero h1 span {
+      background: linear-gradient(135deg, var(--accent), var(--warm));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      font-size: 1.2rem;
+      color: var(--text-muted);
+      max-width: 540px;
+      margin: 0 auto;
+    }
+
+    /* Section */
+    section {
+      margin-bottom: 48px;
+    }
+
+    section h2 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    section > p {
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    /* Form */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 500;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+
+    .form-group .hint {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    /* Sliders */
+    .sliders {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px 24px;
+    }
+
+    .slider-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .slider-group label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .slider-group label span {
+      color: var(--accent);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      border: 2px solid var(--surface);
+    }
+
+    /* Platform tabs */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 24px;
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 4px;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 10px 16px;
+      background: transparent;
+      border: none;
+      border-radius: 6px;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+
+    .tab:hover:not(.active) {
+      color: var(--text);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Button */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 14px 24px;
+      background: var(--warm);
+      color: #0a0a0f;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 8px;
+    }
+
+    .btn:hover {
+      background: var(--warm-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px var(--warm-glow);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn.success {
+      background: var(--success);
+      color: #0a0a0f;
+    }
+
+    /* Steps */
+    .steps {
+      counter-reset: step;
+    }
+
+    .step {
+      position: relative;
+      padding-left: 48px;
+      margin-bottom: 20px;
+      min-height: 36px;
+    }
+
+    .step::before {
+      counter-increment: step;
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--accent-glow);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-size: 0.875rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .step h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .step p {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    .step code {
+      background: var(--bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: var(--accent);
+    }
+
+    /* Layers visual */
+    .layers {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin: 24px 0;
+    }
+
+    .layer {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.875rem;
+    }
+
+    .layer .label {
+      font-weight: 500;
+    }
+
+    .layer .desc {
+      color: var(--text-muted);
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 48px 0;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      border-top: 1px solid var(--border);
+    }
+
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    /* Divider */
+    hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 48px 0;
+    }
+
+    @media (max-width: 600px) {
+      .hero h1 { font-size: 2.2rem; }
+      .form-row, .sliders { grid-template-columns: 1fr; }
+      .container { padding: 0 16px; }
+      .card { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- Hero -->
+    <div class="hero">
+      <h1><span>Engram</span></h1>
+      <p>Personal AI infrastructure. Give your AI a name, a personality, and skills that persist across every conversation.</p>
+    </div>
+
+    <!-- What it does -->
+    <section>
+      <h2>What you get</h2>
+      <p>A personalized setup package that turns any AI into <em>your</em> AI.</p>
+      <div class="layers">
+        <div class="layer"><span class="label">Personality</span><span class="desc">Who your AI is</span></div>
+        <div class="layer"><span class="label">Skills</span><span class="desc">Research, task management, reflection</span></div>
+        <div class="layer"><span class="label">Memory</span><span class="desc">Context that persists across sessions</span></div>
+        <div class="layer"><span class="label">Identity</span><span class="desc">Your AI knows your name and preferences</span></div>
+      </div>
+    </section>
+
+    <hr>
+
+    <!-- Generator -->
+    <section>
+      <h2>Create your AI</h2>
+      <p>Fill in the details below and download your setup package.</p>
+
+      <div class="card">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="userName">Your name</label>
+            <input type="text" id="userName" placeholder="e.g. Sarah">
+          </div>
+          <div class="form-group">
+            <label for="aiName">Your AI's name</label>
+            <input type="text" id="aiName" placeholder="e.g. Atlas">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Personality</label>
+          <p class="hint">Drag the sliders to shape how your AI communicates.</p>
+          <div class="sliders">
+            <div class="slider-group">
+              <label>Humor <span id="humorVal">50</span></label>
+              <input type="range" id="humor" min="0" max="100" value="50">
+            </div>
+            <div class="slider-group">
+              <label>Precision <span id="precisionVal">80</span></label>
+              <input type="range" id="precision" min="0" max="100" value="80">
+            </div>
+            <div class="slider-group">
+              <label>Curiosity <span id="curiosityVal">70</span></label>
+              <input type="range" id="curiosity" min="0" max="100" value="70">
+            </div>
+            <div class="slider-group">
+              <label>Directness <span id="directnessVal">70</span></label>
+              <input type="range" id="directness" min="0" max="100" value="70">
+            </div>
+            <div class="slider-group">
+              <label>Excitement <span id="excitementVal">50</span></label>
+              <input type="range" id="excitement" min="0" max="100" value="50">
+            </div>
+            <div class="slider-group">
+              <label>Playfulness <span id="playfulnessVal">50</span></label>
+              <input type="range" id="playfulness" min="0" max="100" value="50">
+            </div>
+            <div class="slider-group">
+              <label>Formality <span id="professionalismVal">60</span></label>
+              <input type="range" id="professionalism" min="0" max="100" value="60">
+            </div>
+          </div>
+        </div>
+
+        <button class="btn" id="generateBtn" onclick="generateBundle()">
+          Download your AI setup
+        </button>
+      </div>
+    </section>
+
+    <hr>
+
+    <!-- Setup instructions -->
+    <section>
+      <h2>Setup instructions</h2>
+      <p>After downloading, follow the steps for your platform.</p>
+
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('claude')">Claude.ai</button>
+        <button class="tab" onclick="switchTab('desktop')">Claude Desktop</button>
+        <button class="tab" onclick="switchTab('chatgpt')">ChatGPT</button>
+      </div>
+
+      <!-- Claude.ai -->
+      <div class="tab-content active" id="tab-claude">
+        <div class="steps">
+          <div class="step">
+            <h3>Unzip the download</h3>
+            <p>Extract the zip file. You'll see a folder with your AI's files.</p>
+          </div>
+          <div class="step">
+            <h3>Create a new Project</h3>
+            <p>Go to <a href="https://claude.ai" target="_blank" style="color:var(--accent)">claude.ai</a>, click <strong>Projects</strong> in the sidebar, then <strong>Create Project</strong>. Name it after your AI.</p>
+          </div>
+          <div class="step">
+            <h3>Add custom instructions</h3>
+            <p>In the project, click the gear icon. Under <strong>Custom Instructions</strong>, paste the entire contents of <code>INSTRUCTIONS.md</code>.</p>
+          </div>
+          <div class="step">
+            <h3>Upload knowledge files</h3>
+            <p>Click <strong>Add Content</strong> and upload: <code>context.md</code>, <code>memory-starter.md</code>, and all files from the <code>skills/</code> folder.</p>
+          </div>
+          <div class="step">
+            <h3>Start chatting</h3>
+            <p>Open a new conversation in the project. Your AI will greet you by name.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Claude Desktop -->
+      <div class="tab-content" id="tab-desktop">
+        <div class="steps">
+          <div class="step">
+            <h3>Unzip the download</h3>
+            <p>Extract the zip file to a location you'll remember.</p>
+          </div>
+          <div class="step">
+            <h3>Create a new Project</h3>
+            <p>In Claude Desktop, create a new Project and name it after your AI.</p>
+          </div>
+          <div class="step">
+            <h3>Add custom instructions</h3>
+            <p>Open project settings. Paste the contents of <code>INSTRUCTIONS.md</code> into the Custom Instructions field.</p>
+          </div>
+          <div class="step">
+            <h3>Upload knowledge files</h3>
+            <p>Add <code>context.md</code>, <code>memory-starter.md</code>, and all <code>skills/*.md</code> files as project knowledge.</p>
+          </div>
+          <div class="step">
+            <h3>Start chatting</h3>
+            <p>Your AI is ready. It knows your name, has skills, and follows your personality preferences.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ChatGPT -->
+      <div class="tab-content" id="tab-chatgpt">
+        <div class="steps">
+          <div class="step">
+            <h3>Unzip the download</h3>
+            <p>Extract the zip file. Open <code>CHATGPT-INSTRUCTIONS.md</code>.</p>
+          </div>
+          <div class="step">
+            <h3>Open Custom Instructions</h3>
+            <p>Go to <a href="https://chatgpt.com" target="_blank" style="color:var(--accent)">chatgpt.com</a> &rarr; Settings &rarr; Personalization &rarr; Custom Instructions.</p>
+          </div>
+          <div class="step">
+            <h3>Paste the "About you" section</h3>
+            <p>Copy the first section from <code>CHATGPT-INSTRUCTIONS.md</code> into "What would you like ChatGPT to know about you?"</p>
+          </div>
+          <div class="step">
+            <h3>Paste the "Response style" section</h3>
+            <p>Copy the second section into "How would you like ChatGPT to respond?"</p>
+          </div>
+          <div class="step">
+            <h3>Start chatting</h3>
+            <p>ChatGPT will now use your AI's personality. For skills, paste individual skill files at the start of conversations when needed.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <hr>
+
+    <footer>
+      <p>Built by <a href="https://github.com/AlanCarroll/engram">Engram</a> &mdash; open-source personal AI infrastructure.</p>
+      <p style="margin-top:8px">The stable layer between raw AI model and useful AI system.</p>
+    </footer>
+
+  </div>
+
+<script>
+// ── Slider value display ────────────────────────────────────────
+const sliders = ['humor', 'precision', 'curiosity', 'directness', 'excitement', 'playfulness', 'professionalism'];
+sliders.forEach(id => {
+  const el = document.getElementById(id);
+  const valEl = document.getElementById(id + 'Val');
+  el.addEventListener('input', () => { valEl.textContent = el.value; });
+});
+
+// ── Tab switching ───────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ── Bundle generation ───────────────────────────────────────────
+async function generateBundle() {
+  const userName = document.getElementById('userName').value.trim();
+  const aiName = document.getElementById('aiName').value.trim();
+
+  if (!userName) { alert('Please enter your name.'); return; }
+  if (!aiName) { alert('Please enter a name for your AI.'); return; }
+
+  const btn = document.getElementById('generateBtn');
+  btn.textContent = 'Generating...';
+  btn.disabled = true;
+
+  const personality = {};
+  sliders.forEach(id => { personality[id] = parseInt(document.getElementById(id).value); });
+
+  try {
+    const zip = new JSZip();
+
+    // INSTRUCTIONS.md
+    zip.file('INSTRUCTIONS.md', generateInstructions(userName, aiName, personality));
+
+    // ChatGPT instructions
+    zip.file('CHATGPT-INSTRUCTIONS.md', generateChatGPTInstructions(userName, aiName, personality));
+
+    // context.md
+    zip.file('context.md', generateContext(userName, aiName));
+
+    // memory-starter.md
+    zip.file('memory-starter.md', generateMemoryStarter(userName, aiName));
+
+    // Skills
+    const skillFiles = getSkillFiles();
+    for (const [name, content] of Object.entries(skillFiles)) {
+      zip.file('skills/' + name + '.md', content);
+    }
+
+    // SETUP.md
+    zip.file('SETUP.md', generateSetup(userName, aiName));
+
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = aiName.toLowerCase().replace(/\s+/g, '-') + '-engram-bundle.zip';
+    a.click();
+    URL.revokeObjectURL(url);
+
+    btn.textContent = 'Downloaded!';
+    btn.classList.add('success');
+    setTimeout(() => {
+      btn.textContent = 'Download your AI setup';
+      btn.classList.remove('success');
+      btn.disabled = false;
+    }, 3000);
+
+  } catch (err) {
+    console.error(err);
+    alert('Error generating bundle: ' + err.message);
+    btn.textContent = 'Download your AI setup';
+    btn.disabled = false;
+  }
+}
+
+// ── Template generators ─────────────────────────────────────────
+
+function generateInstructions(userName, aiName, p) {
+  return `# ${aiName} \u2014 Personal AI Assistant
+
+You are **${aiName}**, ${userName}'s personal AI assistant.
+
+## Identity
+
+- Your name is **${aiName}**
+- The user's name is **${userName}**
+- Always address the user as "${userName}"
+- Speak in first person ("I can...", "my approach...")
+
+## Personality
+
+\`\`\`yaml
+personality:
+  humor: ${p.humor}
+  excitement: ${p.excitement}
+  curiosity: ${p.curiosity}
+  precision: ${p.precision}
+  professionalism: ${p.professionalism}
+  directness: ${p.directness}
+  playfulness: ${p.playfulness}
+\`\`\`
+
+Adjust your behavior to match these calibrations:
+- Higher humor \u2192 more witty, playful responses
+- Higher precision \u2192 more exact, detailed answers
+- Higher directness \u2192 more blunt, less hedging
+- Higher professionalism \u2192 more formal tone
+
+## Core Principles
+
+1. **Honest uncertainty** \u2014 Say "I don't know" when you don't know. Never fabricate.
+2. **Capability transfer** \u2014 Teach the user, don't create dependency. Explain your reasoning.
+3. **Minimal intervention** \u2014 Only change what's needed. Don't over-engineer.
+4. **Security first** \u2014 Never expose secrets, credentials, or sensitive data.
+5. **Ask before big changes** \u2014 Check with ${userName} before significant actions.
+
+## Permission to Fail
+
+You have explicit permission to say:
+- "I don't have enough information to answer accurately."
+- "I found conflicting information \u2014 here are both sides."
+- "I could guess, but I'm not confident."
+
+You will never be penalized for honest uncertainty. Fabrication is always worse.
+
+## How to Use Skills
+
+You have access to skill documents uploaded as knowledge files. Each skill describes:
+- **What it does** and when to use it
+- **Workflows** with step-by-step instructions
+- **Output formats** for consistent results
+
+When ${userName} asks something that matches a skill's triggers, follow that skill's workflow. If no skill matches, use your general capabilities.
+
+## Memory
+
+Since you don't have persistent memory across conversations, help ${userName} maintain continuity:
+
+1. At the **start** of a conversation, ask if there's context from previous sessions to share
+2. At the **end** of a conversation, offer a summary of key decisions and learnings
+3. When you learn something important about ${userName}'s preferences, mention it so they can note it
+
+If a memory file (memory-starter.md) is available, reference it for ongoing context.
+
+## Response Style
+
+- Be direct and practical
+- Match the personality calibration above
+- Use markdown formatting for structure
+- Include sources when doing research
+- Flag concerns before proceeding with risky actions
+- Keep responses focused \u2014 don't add unnecessary preamble
+`;
+}
+
+function generateChatGPTInstructions(userName, aiName, p) {
+  const highTraits = [];
+  const lowTraits = [];
+  Object.entries(p).forEach(([k, v]) => {
+    if (v >= 70) highTraits.push(k);
+    else if (v <= 30) lowTraits.push(k);
+  });
+  const personalityNote = highTraits.length > 0 ? `\nPersonality emphasis: high ${highTraits.join(', ')}.` : '';
+
+  return `# ChatGPT Custom Instructions for ${aiName}
+
+## Section 1: "What would you like ChatGPT to know about you?"
+
+Paste this into the first field:
+
+---
+
+My name is ${userName}. I use an AI assistant named ${aiName}. Key preferences:
+- Be direct and practical, no unnecessary preamble
+- Say "I don't know" when uncertain \u2014 never fabricate
+- Ask before making significant changes or assumptions
+- Teach me, don't just give answers \u2014 explain your reasoning
+- Use markdown formatting for structured responses
+
+---
+
+## Section 2: "How would you like ChatGPT to respond?"
+
+Paste this into the second field:
+
+---
+
+You are ${aiName}, ${userName}'s personal AI assistant.${personalityNote}
+
+Core rules:
+- Always address user as "${userName}"
+- Speak in first person ("I think...", "my suggestion...")
+- Be honest about uncertainty
+- Keep responses focused and actionable
+- Flag security concerns proactively
+- Transfer capability \u2014 teach, don't create dependency
+
+---
+`;
+}
+
+function generateContext(userName, aiName) {
+  return `# About ${userName}
+
+*Personal context for ${aiName}. Update this file as your goals and preferences change.*
+
+## Who I Am
+
+**Name:** ${userName}
+
+## What I'm Working On
+
+[Describe your current projects, goals, or areas of focus]
+
+## How I Work
+
+- [Your preferred communication style]
+- [Tools or frameworks you prefer]
+- [Any constraints on your time or resources]
+
+## Things ${aiName} Should Remember
+
+- [Important preferences]
+- [Recurring patterns in your work]
+- [Things you always want flagged]
+`;
+}
+
+function generateMemoryStarter(userName, aiName) {
+  return `# ${aiName} \u2014 Memory
+
+*Use this file to track things ${aiName} learns about you across conversations.*
+*Copy key insights here between sessions so ${aiName} can reference them.*
+
+## Preferences
+
+- [Add preferences as you discover them]
+
+## Key Decisions
+
+- [Record important decisions and their reasoning]
+
+## Learnings
+
+- [Things ${aiName} figured out that should persist]
+
+## Active Projects
+
+| Project | Status | Notes |
+|---------|--------|-------|
+| [Project name] | [active/paused/done] | [Key context] |
+`;
+}
+
+function generateSetup(userName, aiName) {
+  return `# ${aiName} \u2014 Setup Guide
+
+This bundle was generated by Engram, a personal AI infrastructure framework.
+
+## Quick Start
+
+### For Claude.ai or Claude Desktop
+
+1. Go to claude.ai (or open Claude Desktop) and create a new **Project**
+2. Name it "${aiName}"
+3. Open Project Settings and paste the contents of INSTRUCTIONS.md into **Custom Instructions**
+4. Click **Add Content** and upload: context.md, memory-starter.md, and all files from skills/
+5. Start a new conversation in the project
+
+### For ChatGPT
+
+1. Open CHATGPT-INSTRUCTIONS.md
+2. Go to chatgpt.com > Settings > Personalization > Custom Instructions
+3. Paste Section 1 into "What would you like ChatGPT to know about you?"
+4. Paste Section 2 into "How would you like ChatGPT to respond?"
+5. Click Save and start chatting
+
+## Maintaining Memory
+
+After each meaningful conversation, copy key learnings into memory-starter.md and re-upload it to your project. This keeps ${aiName} informed across sessions.
+
+## Customizing
+
+- Edit **context.md** with your real info (projects, preferences, work style)
+- Adjust personality values in **INSTRUCTIONS.md** (0\u2013100 for each trait)
+- Add new skills by creating .md files following the pattern in the skills/ folder
+
+---
+*Generated by Engram v0.1.0*
+`;
+}
+
+// ── Embedded skill content ──────────────────────────────────────
+
+function getSkillFiles() {
+  return {
+    'Research': `# Research
+
+Structured web research at three depth levels. Every research output includes sources and confidence indicators.
+
+- **QuickLookup**: Fast factual answers (30 seconds)
+- **DeepDive**: Thorough multi-source investigation (2-5 minutes)
+- **Compare**: Side-by-side evaluation of options (2-3 minutes)
+
+## Workflow Routing
+
+| Intent | Workflow | When to use |
+|--------|----------|-------------|
+| Quick factual question | QuickLookup | Simple questions with direct answers: "what is X", "how much does Y cost" |
+| Thorough investigation | DeepDive | Complex topics needing multiple angles: "deep dive on X", "research X thoroughly" |
+| Compare alternatives | Compare | Evaluating options: "compare X vs Y", "which is better" |
+
+---
+
+## Workflow: QuickLookup
+
+Fast factual lookup. Optimized for speed and precision.
+
+### Steps
+
+1. **Identify the core question** -- Distill the request into a single, precise factual question
+2. **Search** -- Execute 1-2 targeted web searches
+3. **Extract** -- Pull the direct answer from the most authoritative source
+4. **Respond** -- Return a concise answer with source URL and date
+
+---
+
+## Workflow: DeepDive
+
+Thorough multi-source research producing a structured brief.
+
+### Steps
+
+1. **Decompose** -- Break the topic into 3-5 independent research questions
+2. **Search** -- Research each question independently (2-3 searches per question)
+3. **Cross-reference** -- Compare findings across sources. Flag contradictions, note consensus
+4. **Synthesize** -- Compile into a research brief with: Summary, Key Findings, Sources, Open Questions
+
+---
+
+## Workflow: Compare
+
+Side-by-side comparison of 2-4 options with a recommendation.
+
+### Steps
+
+1. **Identify options** -- Confirm the options being compared
+2. **Define criteria** -- Determine 4-6 comparison criteria (objective + subjective)
+3. **Research** -- Investigate each option against every criterion
+4. **Tabulate** -- Present findings in a comparison table
+5. **Recommend** -- Provide a clear recommendation with reasoning`,
+
+    'DoWork': `# DoWork
+
+Persistent task queue for capturing, prioritizing, and executing work items.
+
+The queue supports three operations:
+- **Capture**: Add new work items with priority
+- **WorkLoop**: Process items from highest to lowest priority
+- **Status**: View current queue state
+
+## Workflow Routing
+
+| Intent | Workflow | When to use |
+|--------|----------|-------------|
+| Add a task | Capture | "capture this", "add to queue", "remind me to", "I need to" |
+| Process tasks | WorkLoop | "do work", "start working", "process the queue" |
+| View queue | Status | "queue status", "what's pending", "show work items" |
+
+---
+
+## Workflow: Capture
+
+1. **Parse** -- Extract title, description, and priority (low/medium/high) from the request
+2. **Persist** -- Add to the task list with status "pending" and current timestamp
+3. **Confirm** -- Report back the item title, priority, and queue position
+
+---
+
+## Workflow: WorkLoop
+
+1. **Select** -- Pick the highest-priority pending item (high > medium > low, oldest first)
+2. **Execute** -- Perform the work described in the item
+3. **Complete** -- Mark as completed with timestamp
+4. **Continue?** -- Ask if user wants to proceed to the next item
+
+---
+
+## Workflow: Status
+
+1. **Read** -- Load the task list
+2. **Group** -- Categorize by status (pending, in progress, completed)
+3. **Display** -- Show summary table with counts and item details`,
+
+    'Reflect': `# Reflect
+
+Extracts actionable learnings from work sessions. The goal is not to summarize what happened, but to capture **transferable knowledge** -- patterns, solutions, and mistakes that will be useful in future sessions.
+
+## Workflow Routing
+
+| Intent | Workflow | When to use |
+|--------|----------|-------------|
+| Extract learnings | ExtractLearnings | "what did I learn", "reflect on this session", "capture learnings" |
+
+---
+
+## Workflow: ExtractLearnings
+
+### Steps
+
+1. **Review** -- Scan the conversation for:
+   - Problems solved (obstacle + fix)
+   - Approaches that worked well
+   - Mistakes or dead ends
+   - New patterns discovered
+   - Surprising findings
+
+2. **Classify** -- For each learning, assign:
+   - **category**: debugging, architecture, tooling, workflow, domain-knowledge, etc.
+   - **learning**: Concise statement (1-2 sentences)
+   - **evidence**: The specific example from the session
+   - **actionability**: high, medium, or low
+
+3. **Filter** -- Discard learnings that are too vague, already well-known, or not transferable
+
+4. **Present** -- Display learnings grouped by actionability (high first)`
+  };
+}
+</script>
+
+</body>
+</html>
