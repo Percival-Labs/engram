@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 /**
  * SecurityValidator.hook.ts - Security Validation for Tool Calls (PreToolUse)
  *
@@ -65,6 +65,7 @@ import { join } from 'path';
 import { homedir } from 'os';
 import { parse as parseYaml } from 'yaml';
 import { engramPath } from './lib/paths';
+import { readStdinText } from './lib/compat';
 
 // ========================================
 // Security Event Logging
@@ -579,13 +580,7 @@ async function main(): Promise<void> {
   let input: HookInput;
 
   try {
-    // Fast stdin read with timeout
-    const text = await Promise.race([
-      Bun.stdin.text(),
-      new Promise<string>((_, reject) =>
-        setTimeout(() => reject(new Error('timeout')), 100)
-      )
-    ]);
+    const text = await readStdinText();
 
     if (!text.trim()) {
       console.log(JSON.stringify({ continue: true }));

@@ -120,7 +120,7 @@ Fabrication is always worse than honest uncertainty.
 `;
 }
 
-export function renderSettingsJson(config: InitConfig, hooksDir: string): object {
+export function renderSettingsJson(config: InitConfig, hooksDir: string, hookExt: string = '.hook.mjs'): object {
   return {
     "$schema": "https://json.schemastore.org/claude-code-settings.json",
     env: {
@@ -141,8 +141,8 @@ export function renderSettingsJson(config: InitConfig, hooksDir: string): object
       SessionStart: [
         {
           hooks: [
-            { type: "command", command: `${hooksDir}/GreetingHook.hook.ts` },
-            { type: "command", command: `${hooksDir}/LoadContext.hook.ts` }
+            { type: "command", command: `${hooksDir}/GreetingHook${hookExt}` },
+            { type: "command", command: `${hooksDir}/LoadContext${hookExt}` }
           ]
         }
       ],
@@ -150,39 +150,39 @@ export function renderSettingsJson(config: InitConfig, hooksDir: string): object
         {
           matcher: "Bash",
           hooks: [
-            { type: "command", command: `${hooksDir}/SecurityValidator.hook.ts` }
+            { type: "command", command: `${hooksDir}/SecurityValidator${hookExt}` }
           ]
         },
         {
           matcher: "Edit",
           hooks: [
-            { type: "command", command: `${hooksDir}/SecurityValidator.hook.ts` }
+            { type: "command", command: `${hooksDir}/SecurityValidator${hookExt}` }
           ]
         },
         {
           matcher: "Write",
           hooks: [
-            { type: "command", command: `${hooksDir}/SecurityValidator.hook.ts` }
+            { type: "command", command: `${hooksDir}/SecurityValidator${hookExt}` }
           ]
         },
         {
           matcher: "Read",
           hooks: [
-            { type: "command", command: `${hooksDir}/SecurityValidator.hook.ts` }
+            { type: "command", command: `${hooksDir}/SecurityValidator${hookExt}` }
           ]
         }
       ],
       Stop: [
         {
           hooks: [
-            { type: "command", command: `${hooksDir}/EventCapture.hook.ts --event-type Stop` }
+            { type: "command", command: `${hooksDir}/EventCapture${hookExt} --event-type Stop` }
           ]
         }
       ],
       SessionEnd: [
         {
           hooks: [
-            { type: "command", command: `${hooksDir}/SessionSummary.hook.ts` }
+            { type: "command", command: `${hooksDir}/SessionSummary${hookExt}` }
           ]
         }
       ]

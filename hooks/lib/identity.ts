@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 /**
  * Central Identity Loader
  * Single source of truth for DA (Digital Assistant) and Principal identity

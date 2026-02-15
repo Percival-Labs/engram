@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 /**
  * SessionSummary.hook.ts - Mark Work Complete and Clear State (SessionEnd)
  *
@@ -45,6 +45,7 @@ import { writeFileSync, existsSync, readFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { getISOTimestamp } from './lib/time';
 import { engramPath } from './lib/paths';
+import { readStdinText } from './lib/compat';
 
 const STATE_DIR = engramPath('MEMORY', 'STATE');
 const CURRENT_WORK_FILE = join(STATE_DIR, 'current-work.json');
@@ -93,8 +94,7 @@ function clearSessionWork(): void {
 
 async function main() {
   try {
-    // Read input from stdin (not strictly needed but matches hook pattern)
-    const input = await Bun.stdin.text();
+    const input = await readStdinText();
     if (!input || input.trim() === '') {
       process.exit(0);
     }

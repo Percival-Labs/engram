@@ -90,11 +90,25 @@ export async function init(): Promise<void> {
     mkdirSync(dir, { recursive: true });
   }
 
-  // ── Copy starter hooks ────────────────────────────────────────────
+  // ── Copy compiled hooks (Node-compatible .mjs bundles) ───────────
+  const compiledHooksDir = join(frameworkRoot, 'dist', 'hooks');
   const sourceHooksDir = join(frameworkRoot, 'hooks');
   let hooksCount = 0;
 
-  if (existsSync(sourceHooksDir)) {
+  // Prefer compiled hooks (self-contained, Node-compatible)
+  if (existsSync(compiledHooksDir)) {
+    const hookFiles = readdirSync(compiledHooksDir).filter(
+      f => f.endsWith('.hook.mjs')
+    );
+
+    for (const file of hookFiles) {
+      cpSync(join(compiledHooksDir, file), join(hooksDir, file));
+      chmodSync(join(hooksDir, file), 0o755);
+      hooksCount++;
+    }
+  } else if (existsSync(sourceHooksDir)) {
+    // Fallback to source hooks (requires bun)
+    console.log('  Note: Using source hooks (requires bun runtime)');
     const hookFiles = readdirSync(sourceHooksDir).filter(
       f => f.endsWith('.hook.ts') || f.endsWith('.hook.js')
     );
@@ -103,13 +117,12 @@ export async function init(): Promise<void> {
       cpSync(join(sourceHooksDir, file), join(hooksDir, file));
       hooksCount++;
     }
-  }
 
-  // ── Copy hooks/lib/ files ─────────────────────────────────────────
-  const sourceHooksLibDir = join(frameworkRoot, 'hooks', 'lib');
-
-  if (existsSync(sourceHooksLibDir)) {
-    cpSync(sourceHooksLibDir, join(hooksDir, 'lib'), { recursive: true });
+    // Copy hooks/lib/ for source hooks
+    const sourceHooksLibDir = join(sourceHooksDir, 'lib');
+    if (existsSync(sourceHooksLibDir)) {
+      cpSync(sourceHooksLibDir, join(hooksDir, 'lib'), { recursive: true });
+    }
   }
 
   // ── Copy starter skills ───────────────────────────────────────────
@@ -127,8 +140,14 @@ export async function init(): Promise<void> {
     }
   }
 
+  // Determine which hook extension was installed
+  const hookExt = existsSync(compiledHooksDir) ? '.hook.mjs' : '.hook.ts';
+
   // ── Copy patterns.example.yaml ────────────────────────────────────
-  const patternsSource = join(frameworkRoot, 'patterns.example.yaml');
+  // Try compiled hooks dir first, then source hooks dir
+  const patternsFromCompiled = join(compiledHooksDir, 'patterns.example.yaml');
+  const patternsFromSource = join(frameworkRoot, 'hooks', 'patterns.example.yaml');
+  const patternsSource = existsSync(patternsFromCompiled) ? patternsFromCompiled : patternsFromSource;
 
   if (existsSync(patternsSource)) {
     cpSync(patternsSource, join(targetDir, 'patterns.example.yaml'));
@@ -163,7 +182,7 @@ export async function init(): Promise<void> {
 
   // ── Generate settings.json ────────────────────────────────────────
   const settingsPath = join(targetDir, 'settings.json');
-  const newSettings = renderSettingsJson(config, hooksDir);
+  const newSettings = renderSettingsJson(config, hooksDir, hookExt);
 
   if (mode === 'augment' && existsSync(settingsPath)) {
     try {
@@ -199,7 +218,7 @@ export async function init(): Promise<void> {
   // ── chmod +x all hooks ────────────────────────────────────────────
   if (existsSync(hooksDir)) {
     const allHookFiles = readdirSync(hooksDir).filter(
-      f => f.endsWith('.hook.ts') || f.endsWith('.hook.js')
+      f => f.endsWith('.hook.ts') || f.endsWith('.hook.js') || f.endsWith('.hook.mjs')
     );
 
     for (const file of allHookFiles) {

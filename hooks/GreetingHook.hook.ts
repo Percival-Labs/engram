@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 /**
  * GreetingHook.hook.ts - Simple Session Greeting (SessionStart)
  *

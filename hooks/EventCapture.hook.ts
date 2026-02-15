@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 /**
  * EventCapture.hook.ts - Capture Hook Events to JSONL History (PostToolUse / SessionEnd)
  *
@@ -34,6 +34,7 @@ import { appendFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { engramPath } from './lib/paths';
 import { getDate, getYearMonth, getTimestamp } from './lib/time';
+import { readStdinText } from './lib/compat';
 
 interface HookEvent {
   timestamp: string;
@@ -75,8 +76,7 @@ async function main() {
       }
     }
 
-    // Read input from stdin
-    const text = await Bun.stdin.text();
+    const text = await readStdinText();
     if (!text || text.trim() === '') {
       process.exit(0);
     }

@@ -1,13 +1,15 @@
 {
   "name": "engram-harness",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Engram — The AI Harness for Everyone. Personal AI infrastructure that turns any model into your AI.",
   "type": "module",
   "bin": {
     "engram": "./dist/cli.js"
   },
   "scripts": {
-    "build": "bun build src/cli.ts --outdir dist --target node",
+    "build": "bun build src/cli.ts --outdir dist --target node && bun run build:hooks",
+    "build:cli": "bun build src/cli.ts --outdir dist --target node",
+    "build:hooks": "bun run scripts/build-hooks.ts",
     "dev": "bun run src/cli.ts",
     "typecheck": "tsc --noEmit"
   },
@@ -36,7 +38,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/AlanCarroll/engram"
+    "url": "https://github.com/Percival-Labs/engram"
   },
   "keywords": [
     "ai",

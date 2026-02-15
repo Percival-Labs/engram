@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 /**
  * LoadContext.hook.ts - Inject Context at Session Start (SessionStart)
  *
@@ -38,19 +38,12 @@
 import { readFileSync, existsSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { getEngramDir } from './lib/paths';
+import { execCommand } from './lib/compat';
 
-async function getCurrentDate(): Promise<string> {
-  try {
-    const proc = Bun.spawn(['date', '+%Y-%m-%d %H:%M:%S %Z'], {
-      stdout: 'pipe',
-      env: { ...process.env, TZ: process.env.TIME_ZONE || 'UTC' }
-    });
-    const output = await new Response(proc.stdout).text();
-    return output.trim();
-  } catch (error) {
-    console.error('Failed to get current date:', error);
-    return new Date().toISOString();
-  }
+function getCurrentDate(): string {
+  const tz = process.env.TIME_ZONE || 'UTC';
+  const result = execCommand('date "+%Y-%m-%d %H:%M:%S %Z"', { TZ: tz });
+  return result || new Date().toISOString();
 }
 
 interface Settings {
@@ -190,7 +183,7 @@ async function main() {
     }
 
     // Get current date/time to prevent confusion about dates
-    const currentDate = await getCurrentDate();
+    const currentDate = getCurrentDate();
     console.error(`Current Date: ${currentDate}`);
 
     // Extract identity values from settings for injection into context
