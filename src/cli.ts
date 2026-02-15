@@ -1,17 +1,29 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 import { Command } from 'commander';
 import { init } from './commands/init';
 import { skillCreate } from './commands/skill-create';
 import { skillIndex } from './commands/skill-index';
 import { bundle } from './commands/bundle';
 import { serve } from './commands/serve';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import { getFrameworkRoot } from './lib/paths';
+
+function getVersion(): string {
+  try {
+    const pkg = JSON.parse(readFileSync(join(getFrameworkRoot(), 'package.json'), 'utf-8'));
+    return pkg.version || '0.0.0';
+  } catch {
+    return '0.1.2';
+  }
+}
 
 const program = new Command();
 
 program
   .name('engram')
   .description('Engram — Personal AI Infrastructure')
-  .version('0.1.0');
+  .version(getVersion());
 
 program
   .command('init')
