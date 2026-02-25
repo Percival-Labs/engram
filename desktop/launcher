@@ -1,0 +1,16 @@
+#!/bin/bash
+# Engram Desktop Launcher
+# Opens Terminal.app and runs the Engram binary
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ENGRAM_BIN="${SCRIPT_DIR}/engram"
+
+# Ensure the binary is executable
+chmod +x "${ENGRAM_BIN}" || { echo "Error: Could not make binary executable at ${ENGRAM_BIN}"; exit 1; }
+
+osascript -e "
+tell application \"Terminal\"
+    activate
+    do script \"\\\"${ENGRAM_BIN}\\\"\"
+end tell
+"

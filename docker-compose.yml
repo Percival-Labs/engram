@@ -1,0 +1,29 @@
+services:
+  engram:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: engram
+    volumes:
+      - engram-memory:/data
+    environment:
+      - ENGRAM_HOME=/data
+    entrypoint: ["/app/docker-entrypoint.sh"]
+    command: ["tail", "-f", "/dev/null"]
+    restart: unless-stopped
+
+  octopus-bridge:
+    build:
+      context: ../../../../PAI/Research/octopus-architecture
+      dockerfile: Dockerfile
+    container_name: octopus-bridge
+    volumes:
+      - engram-memory:/memory
+    environment:
+      - OCTOPUS_MODE=simulation
+      - MEMORY_PATH=/memory/mesh
+    command: ["tail", "-f", "/dev/null"]
+    restart: unless-stopped
+
+volumes:
+  engram-memory:
