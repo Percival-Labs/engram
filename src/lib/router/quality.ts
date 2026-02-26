@@ -7,12 +7,13 @@ import type { TaskComplexity, QualityCheck } from './types';
 // ── Refusal patterns ─────────────────────────────────────────────
 
 const REFUSAL_PATTERNS = [
-  /^i (?:can't|cannot|am not able to|'m not able to)/i,
+  /^i (?:can['\u2019]t|cannot|am not able to)/i,
+  /^i['\u2019]m not able to/i,
   /^as an ai/i,
-  /^i don't have (?:the ability|access)/i,
-  /^sorry,? (?:but )?i (?:can't|cannot)/i,
-  /^unfortunately,? i (?:can't|cannot)/i,
-  /^i'?m (?:just )?an? (?:ai|language model)/i,
+  /^i don['\u2019]t have (?:the ability|access)/i,
+  /^sorry,? (?:but )?i (?:can['\u2019]t|cannot)/i,
+  /^unfortunately,? i (?:can['\u2019]t|cannot)/i,
+  /^i['\u2019]?m (?:just )?an? (?:ai|language model)/i,
 ];
 
 // ── Minimum expected response lengths by complexity ──────────────
@@ -28,7 +29,8 @@ const MIN_LENGTHS: Record<TaskComplexity, number> = {
 // ── Code request detection ───────────────────────────────────────
 
 function askedForCode(query: string): boolean {
-  return /(?:write|create|generate|implement|code|function|class|script|program)\b/i.test(query);
+  return /\b(?:write|create|generate|implement)\b.*\b(?:code|function|class|script|program|method|component|module|handler|middleware|algorithm)\b/i.test(query)
+    || /\b(?:code|function|class|method)\b.*\b(?:that|which|to|for)\b/i.test(query);
 }
 
 function hasCodeBlock(response: string): boolean {
