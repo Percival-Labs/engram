@@ -68,7 +68,7 @@ export async function* executeCascade(
       // Quality check
       const quality = validateResponse(lastQuery, buffered, classification.complexity);
 
-      if (quality.pass || quality.score >= qualityThreshold || escalations >= maxEscalations) {
+      if (quality.score >= qualityThreshold || escalations >= maxEscalations) {
         // Quality OK or no more escalations — yield the buffered response
         const latencyMs = Date.now() - startTime;
         const tokenEstimate = Math.ceil(buffered.length / 4);
@@ -138,7 +138,7 @@ async function* executeCascadeWithExplicitSteps(
 
       const quality = validateResponse(lastQuery, buffered, complexity);
 
-      if (quality.pass || quality.score >= qualityThreshold || i === steps.length - 1) {
+      if (quality.score >= qualityThreshold || i === steps.length - 1) {
         const tokenEstimate = Math.ceil(buffered.length / 4);
 
         lastCascadeResult = {

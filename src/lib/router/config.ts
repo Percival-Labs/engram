@@ -36,6 +36,11 @@ export function getDefaultRoutingConfig(): RoutingConfig {
 
 let yamlCache: { mtime: number; config: Partial<RoutingConfig> } | null = null;
 
+/** Reset the YAML cache (for testing). */
+export function _resetYamlCache(): void {
+  yamlCache = null;
+}
+
 function loadYamlOverrides(): Partial<RoutingConfig> {
   const yamlPath = join(getEngramHome(), 'routing.yaml');
   if (!existsSync(yamlPath)) return {};
