@@ -92,11 +92,15 @@ function loadJsonFile<T>(path: string): T | null {
 }
 
 // ========================================
-// Usage Tracking
+// Usage Tracking (reads from router JSONL + legacy org/usage)
 // ========================================
 
-function getUsageDir(): string {
+function getOrgUsageDir(): string {
   return join(engramHome, 'org', 'usage');
+}
+
+function getRouterUsageDir(): string {
+  return join(engramHome, 'usage');
 }
 
 function getTodayKey(): string {
@@ -107,24 +111,54 @@ function getTodayKey(): string {
   return `${year}-${month}-${day}`;
 }
 
+/**
+ * Load daily usage from router JSONL files (primary) + legacy org/usage (fallback).
+ */
 function loadDailyUsage(dateKey: string): DailyUsage {
-  const usageDir = getUsageDir();
-  const usagePath = join(usageDir, `${dateKey}.json`);
+  let tokens = 0;
+  let costCents = 0;
+  let requests = 0;
 
-  const existing = loadJsonFile<DailyUsage>(usagePath);
-  if (existing) return existing;
+  // Primary: read from router JSONL (~/.engram/usage/YYYY-MM-DD.jsonl)
+  const routerPath = join(getRouterUsageDir(), `${dateKey}.jsonl`);
+  if (existsSync(routerPath)) {
+    try {
+      const lines = readFileSync(routerPath, 'utf-8').trim().split('\n');
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const entry = JSON.parse(line);
+          tokens += (entry.inputTokens ?? 0) + (entry.outputTokens ?? 0);
+          costCents += entry.costCents ?? 0;
+          requests++;
+        } catch {
+          // Skip malformed lines
+        }
+      }
+    } catch {
+      // Read error — continue to legacy
+    }
+  }
 
-  // Initialize fresh daily counter
+  // Fallback: also check legacy org/usage (additive)
+  const legacyPath = join(getOrgUsageDir(), `${dateKey}.json`);
+  const legacy = loadJsonFile<DailyUsage>(legacyPath);
+  if (legacy) {
+    tokens += legacy.tokens;
+    costCents += legacy.cost_cents;
+    requests += legacy.requests;
+  }
+
   return {
-    tokens: 0,
-    cost_cents: 0,
-    requests: 0,
+    tokens,
+    cost_cents: costCents,
+    requests,
     last_updated: new Date().toISOString(),
   };
 }
 
 function saveDailyUsage(dateKey: string, usage: DailyUsage): void {
-  const usageDir = getUsageDir();
+  const usageDir = getOrgUsageDir();
 
   if (!existsSync(usageDir)) {
     mkdirSync(usageDir, { recursive: true });

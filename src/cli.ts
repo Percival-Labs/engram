@@ -9,6 +9,7 @@ import { bundle } from './commands/bundle';
 import { serve } from './commands/serve';
 import { packageInstall } from './commands/package-install';
 import { exportOpenClaw } from './commands/export-openclaw';
+import { usage } from './commands/usage';
 import { teamCreate, teamList, teamInvite, teamRemove } from './commands/team';
 import { agentCreate, agentList, agentDecommission, agentMigrate } from './commands/agent';
 import { orgPolicySet, orgPolicyGet, orgPolicyPropagate } from './commands/org';
@@ -44,6 +45,36 @@ program
   .command('setup')
   .description('Run the first-time setup wizard')
   .action(setup);
+
+program
+  .command('usage')
+  .description('Show token usage and cost tracking')
+  .option('--week', 'Show last 7 days')
+  .option('--month', 'Show last 30 days')
+  .action(usage);
+
+program
+  .command('router')
+  .description('Show routing configuration status')
+  .action(async () => {
+    const { loadRoutingConfig } = await import('./lib/router/index');
+    const config = loadRoutingConfig();
+    console.log('');
+    console.log('  \x1b[1mRouting Configuration\x1b[0m');
+    console.log('  \x1b[2m────────────────────────────────\x1b[0m');
+    console.log(`  Enabled:    ${config.enabled ? '\x1b[32myes\x1b[0m' : '\x1b[33mno\x1b[0m'}`);
+    console.log(`  Strategy:   ${config.strategy}`);
+    console.log(`  Cascade:    ${config.cascade.enabled ? 'on' : 'off'}`);
+    console.log(`  Threshold:  ${config.cascade.qualityThreshold}`);
+    console.log(`  Max escl:   ${config.cascade.maxEscalations}`);
+    console.log(`  Fallback:   ${config.fallback.chain.join(' → ')}`);
+    console.log(`  Budget:     ${config.budgetGuard.dailyLimitCents > 0 ? `$${(config.budgetGuard.dailyLimitCents / 100).toFixed(2)}/day` : 'unlimited'}`);
+    const modelCount = Object.keys(config.models).length;
+    if (modelCount > 0) {
+      console.log(`  Custom models: ${modelCount}`);
+    }
+    console.log('');
+  });
 
 program
   .command('init')

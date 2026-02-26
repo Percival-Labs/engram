@@ -2,6 +2,7 @@ import type { ChatProvider } from './types';
 import { anthropic } from './anthropic';
 import { openai } from './openai';
 import { ollama } from './ollama';
+import { openrouter } from './openrouter';
 
 export type { ChatProvider, Model, ChatMessage, ChatConfig } from './types';
 
@@ -9,6 +10,7 @@ const providers: Record<string, ChatProvider> = {
   anthropic,
   openai,
   ollama,
+  openrouter,
 };
 
 export function getProvider(id: string): ChatProvider {
@@ -17,6 +19,10 @@ export function getProvider(id: string): ChatProvider {
     throw new Error(`Unknown provider: ${id}. Available: ${Object.keys(providers).join(', ')}`);
   }
   return provider;
+}
+
+export function getAllProviders(): Record<string, ChatProvider> {
+  return { ...providers };
 }
 
 export function listProviders(): ChatProvider[] {

@@ -85,6 +85,21 @@ function renderToken(token: string, linePos: number, inCodeBlock: boolean): Rend
   return { text: output, linePos: pos, inCodeBlock: inCode };
 }
 
+export function printRoutingInfo(info: {
+  model: string;
+  provider: string;
+  costCents: number;
+  escalated: boolean;
+  complexity?: string;
+  latencyMs?: number;
+}): void {
+  const cost = info.costCents > 0 ? `$${(info.costCents / 100).toFixed(4)}` : 'free';
+  const esc = info.escalated ? ` ${YELLOW}[escalated]${RESET}` : '';
+  const complexity = info.complexity ? ` ${DIM}(${info.complexity})${RESET}` : '';
+  const latency = info.latencyMs ? ` ${DIM}${info.latencyMs}ms${RESET}` : '';
+  console.log(`  ${DIM}${info.provider}/${info.model} · ${cost}${esc}${complexity}${latency}${RESET}`);
+}
+
 export function printHelp(): void {
   console.log('');
   console.log(`  ${BOLD}Commands${RESET}`);
@@ -94,6 +109,8 @@ export function printHelp(): void {
   console.log(`  ${CYAN}/model${RESET}    Switch model`);
   console.log(`  ${CYAN}/config${RESET}   Show current configuration`);
   console.log(`  ${CYAN}/history${RESET}  List recent conversations`);
+  console.log(`  ${CYAN}/usage${RESET}    Show token/cost usage`);
+  console.log(`  ${CYAN}/routing${RESET}  Show routing status`);
   console.log(`  ${CYAN}/quit${RESET}     Save and exit`);
   console.log('');
 }

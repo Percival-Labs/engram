@@ -1,6 +1,6 @@
 import * as readline from 'readline';
 import { hasConfig, loadConfig } from '../lib/config';
-import { getProvider } from '../lib/providers/index';
+import { getProvider, getAllProviders } from '../lib/providers/index';
 import type { ChatMessage } from '../lib/providers/types';
 import { buildSystemPrompt } from '../lib/system-prompt';
 import { createConversation, saveConversation, listConversations } from '../lib/conversation';
@@ -14,8 +14,10 @@ import {
   printHistory,
   printError,
   printGoodbye,
+  printRoutingInfo,
 } from '../lib/chat-renderer';
 import { setup } from './setup';
+import { EngramRouter, loadRoutingConfig } from '../lib/router/index';
 
 interface ChatOptions {
   provider?: string;
@@ -55,6 +57,13 @@ export async function chat(options: ChatOptions = {}): Promise<void> {
   const messages: ChatMessage[] = [
     { role: 'system', content: systemPrompt },
   ];
+
+  // Initialize router (pass API keys so provider-router can access them)
+  const routingConfig = loadRoutingConfig();
+  const apiKeys: Record<string, string> = {};
+  if (config.provider.apiKey) apiKeys[providerId] = config.provider.apiKey;
+  if (config.routing?.openrouterApiKey) apiKeys['openrouter'] = config.routing.openrouterApiKey;
+  const router = new EngramRouter(routingConfig, getAllProviders(), apiKeys);
 
   printWelcome(config.aiName, modelId, provider.name);
 
@@ -144,8 +153,17 @@ export async function chat(options: ChatOptions = {}): Promise<void> {
 
       (async () => {
         try {
-          const stream = provider.chat(chatConfig);
+          // Use router if routing is enabled, otherwise direct provider call
+          const stream = routingConfig.enabled
+            ? router.chat(chatConfig)
+            : provider.chat(chatConfig);
           const fullResponse = await renderStreamingResponse(stream);
+
+          // Show routing info if routing is active
+          if (routingConfig.enabled) {
+            const info = router.getLastRoutingInfo();
+            if (info) printRoutingInfo(info);
+          }
 
           messages.push({ role: 'assistant', content: fullResponse });
           conversation.messages.push({ role: 'assistant', content: fullResponse });
@@ -207,6 +225,22 @@ async function handleCommand(
       console.log(`\n  \x1b[90mCurrent model: ${modelId}\x1b[0m`);
       console.log(`  \x1b[90mTo change, restart with: engram chat --model <name>\x1b[0m\n`);
       break;
+
+    case '/usage': {
+      const { printUsageSummary } = await import('./usage');
+      printUsageSummary();
+      break;
+    }
+
+    case '/routing':
+    case '/router': {
+      const rc = loadRoutingConfig();
+      console.log(`\n  \x1b[90mRouting: ${rc.enabled ? '\x1b[32menabled' : '\x1b[33mdisabled'}\x1b[0m`);
+      console.log(`  \x1b[90mStrategy: ${rc.strategy}\x1b[0m`);
+      console.log(`  \x1b[90mCascade: ${rc.cascade.enabled ? 'on' : 'off'}\x1b[0m`);
+      console.log(`  \x1b[90mBudget: ${rc.budgetGuard.dailyLimitCents > 0 ? `$${(rc.budgetGuard.dailyLimitCents / 100).toFixed(2)}/day` : 'unlimited'}\x1b[0m\n`);
+      break;
+    }
 
     default:
       console.log(`\n  \x1b[33mUnknown command: ${cmd}\x1b[0m`);

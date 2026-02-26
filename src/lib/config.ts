@@ -24,6 +24,13 @@ export interface EngramConfig {
     baseUrl?: string;
   };
 
+  // ── Routing fields (optional — free tier uses passthrough) ───
+  routing?: {
+    enabled?: boolean;
+    strategy?: 'passthrough' | 'cascade' | 'cost-optimized';
+    openrouterApiKey?: string;
+  };
+
   // ── Team/Enterprise fields (optional — free tier ignores) ───
   org_id?: string;
   team_ids?: string[];
