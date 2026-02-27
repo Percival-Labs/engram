@@ -55,6 +55,31 @@ export async function renderStreamingResponse(
   return full;
 }
 
+import type { ChatStreamEvent } from './providers/types';
+
+export async function renderToolStreamingResponse(
+  stream: AsyncGenerator<ChatStreamEvent>,
+): Promise<string> {
+  let full = '';
+  let linePos = 0;
+  let inCodeBlock = false;
+
+  for await (const event of stream) {
+    if (event.type === 'text') {
+      full += event.text;
+      const rendered = renderToken(event.text, linePos, inCodeBlock);
+      process.stdout.write(rendered.text);
+      linePos = rendered.linePos;
+      inCodeBlock = rendered.inCodeBlock;
+    }
+    // tool_use and message_end are handled by the executor callbacks
+  }
+
+  process.stdout.write(RESET);
+  console.log('\n');
+  return full;
+}
+
 interface RenderState {
   text: string;
   linePos: number;
@@ -151,6 +176,27 @@ export function printHistory(conversations: Array<{ title: string; updatedAt: st
     }
   }
   console.log('');
+}
+
+export function printToolCall(name: string, input: Record<string, unknown>): void {
+  const inputStr = JSON.stringify(input, null, 2)
+    .split('\n')
+    .map((line, i) => i === 0 ? line : `      ${line}`)
+    .join('\n');
+  console.log(`\n  ${MAGENTA}${BOLD}⚙ ${name}${RESET}${DIM}(${inputStr})${RESET}`);
+}
+
+export function printToolResult(name: string, result: string, isError: boolean): void {
+  const icon = isError ? `${YELLOW}✗` : `${GREEN}✓`;
+  const color = isError ? YELLOW : GREEN;
+  // Truncate long results for display
+  const display = result.length > 500
+    ? result.slice(0, 500) + `\n  ${DIM}... (${result.length} chars total)${RESET}`
+    : result;
+  const lines = display.split('\n').map((line, i) =>
+    i === 0 ? line : `    ${line}`
+  ).join('\n');
+  console.log(`  ${icon} ${name}${RESET}: ${color}${lines}${RESET}`);
 }
 
 export function printError(message: string): void {

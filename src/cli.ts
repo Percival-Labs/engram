@@ -11,9 +11,12 @@ import { packageInstall } from './commands/package-install';
 import { exportOpenClaw } from './commands/export-openclaw';
 import { usage } from './commands/usage';
 import { teamCreate, teamList, teamInvite, teamRemove } from './commands/team';
+import { teamRun } from './commands/team-run';
 import { agentCreate, agentList, agentDecommission, agentMigrate } from './commands/agent';
+import { agentGenerate } from './commands/agent-generate';
 import { orgPolicySet, orgPolicyGet, orgPolicyPropagate } from './commands/org';
 import { complianceExport } from './commands/compliance';
+import { chainRun, chainList as chainListCmd } from './commands/chain';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { getFrameworkRoot } from './lib/paths';
@@ -151,6 +154,11 @@ team
   .description('Remove a member from a team')
   .action(teamRemove);
 
+team
+  .command('run <name> <task>')
+  .description('Run an agent team on a task')
+  .action(teamRun);
+
 // ── Agent management ────────────────────────────────────────────
 
 const agent = program
@@ -181,6 +189,27 @@ agent
   .command('migrate <id> <team>')
   .description('Migrate agent to a different team')
   .action(agentMigrate);
+
+agent
+  .command('generate <description>')
+  .description('Generate agent/team/chain configs from a description')
+  .action(agentGenerate);
+
+// ── Chain management ────────────────────────────────────────────
+
+const chain = program
+  .command('chain')
+  .description('Manage agent chains');
+
+chain
+  .command('run <name> <task>')
+  .description('Run an agent chain on a task')
+  .action(chainRun);
+
+chain
+  .command('list')
+  .description('List available chains')
+  .action(chainListCmd);
 
 // ── Organization policy ─────────────────────────────────────────
 

@@ -2,7 +2,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync } from 
 import { join } from 'path';
 import { randomUUID } from 'crypto';
 import { getEngramHome } from './config';
-import type { ChatMessage } from './providers/types';
+import type { ChatMessage, ChatMessageExtended } from './providers/types';
 
 export interface Conversation {
   id: string;
@@ -11,7 +11,7 @@ export interface Conversation {
   provider: string;
   createdAt: string;
   updatedAt: string;
-  messages: ChatMessage[];
+  messages: (ChatMessage | ChatMessageExtended)[];
 }
 
 function getConversationsDir(): string {
@@ -37,7 +37,7 @@ export function saveConversation(conv: Conversation): void {
   // Auto-title from first user message
   if (conv.title === 'New conversation' && conv.messages.length > 0) {
     const firstUser = conv.messages.find(m => m.role === 'user');
-    if (firstUser) {
+    if (firstUser && typeof firstUser.content === 'string') {
       conv.title = firstUser.content.slice(0, 60) + (firstUser.content.length > 60 ? '...' : '');
     }
   }

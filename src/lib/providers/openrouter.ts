@@ -3,7 +3,16 @@
 // 100+ models from multiple providers through a single API key.
 // https://openrouter.ai/docs
 
-import type { ChatProvider, ChatConfig, Model } from './types';
+import type {
+  ChatProvider,
+  ChatConfig,
+  Model,
+  ToolChatProvider,
+  ChatConfigExtended,
+  ChatStreamEvent,
+  ChatMessageExtended,
+  ContentBlock,
+} from './types';
 
 const KNOWN_MODELS: Model[] = [
   { id: 'anthropic/claude-3-haiku', name: 'Claude 3 Haiku' },
@@ -17,7 +26,7 @@ const KNOWN_MODELS: Model[] = [
 
 const BASE_URL = 'https://openrouter.ai/api/v1';
 
-export const openrouter: ChatProvider = {
+export const openrouter: ToolChatProvider = {
   id: 'openrouter',
   name: 'OpenRouter',
   requiresApiKey: true,
@@ -104,5 +113,156 @@ export const openrouter: ChatProvider = {
         }
       }
     }
+  },
+
+  async *chatWithTools(config: ChatConfigExtended): AsyncGenerator<ChatStreamEvent> {
+    const baseUrl = config.baseUrl ?? BASE_URL;
+
+    // Convert ToolDefinition[] to OpenAI function format
+    const tools = config.tools?.map(t => ({
+      type: 'function' as const,
+      function: {
+        name: t.name,
+        description: t.description,
+        parameters: t.input_schema,
+      },
+    }));
+
+    // Convert ChatMessageExtended[] to OpenAI-compatible message format
+    const messages: Array<Record<string, unknown>> = [];
+    for (const msg of config.messages) {
+      if (msg.role === 'assistant' && Array.isArray(msg.content)) {
+        const textParts = (msg.content as ContentBlock[]).filter(b => b.type === 'text');
+        const toolParts = (msg.content as ContentBlock[]).filter(b => b.type === 'tool_use');
+        const content = textParts.map(b => (b as { text: string }).text).join('') || null;
+        const toolCalls = toolParts.map(b => {
+          const tb = b as { id: string; name: string; input: Record<string, unknown> };
+          return {
+            id: tb.id,
+            type: 'function',
+            function: { name: tb.name, arguments: JSON.stringify(tb.input) },
+          };
+        });
+        messages.push({
+          role: 'assistant',
+          content,
+          ...(toolCalls.length > 0 ? { tool_calls: toolCalls } : {}),
+        });
+      } else if (msg.role === 'tool' && Array.isArray(msg.content)) {
+        for (const block of msg.content as ContentBlock[]) {
+          if (block.type === 'tool_result') {
+            messages.push({
+              role: 'tool',
+              tool_call_id: block.tool_use_id,
+              content: block.content,
+            });
+          }
+        }
+      } else {
+        messages.push({
+          role: msg.role === 'tool' ? 'user' : msg.role,
+          content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content),
+        });
+      }
+    }
+
+    const body: Record<string, unknown> = {
+      model: config.model,
+      stream: true,
+      max_tokens: config.maxTokens ?? 4096,
+      messages,
+    };
+
+    if (tools && tools.length > 0) {
+      body.tools = tools;
+    }
+
+    const res = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${config.apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://engram.dev',
+        'X-Title': 'Engram',
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`OpenRouter API error (${res.status}): ${err}`);
+    }
+
+    const reader = res.body!.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    // Buffer tool calls by index
+    const toolCallBuffers: Map<number, { id: string; name: string; arguments: string }> = new Map();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop()!;
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') {
+          for (const [, tc] of toolCallBuffers) {
+            let input: Record<string, unknown> = {};
+            try { input = JSON.parse(tc.arguments || '{}'); } catch { /* empty */ }
+            yield { type: 'tool_use', id: tc.id, name: tc.name, input };
+          }
+          toolCallBuffers.clear();
+          yield { type: 'message_end' };
+          return;
+        }
+
+        try {
+          const event = JSON.parse(data);
+          const delta = event.choices?.[0]?.delta;
+          const finishReason = event.choices?.[0]?.finish_reason;
+
+          if (delta?.content) {
+            yield { type: 'text', text: delta.content };
+          }
+
+          if (delta?.tool_calls) {
+            for (const tc of delta.tool_calls as Array<{ index: number; id?: string; function?: { name?: string; arguments?: string } }>) {
+              const idx = tc.index;
+              if (!toolCallBuffers.has(idx)) {
+                toolCallBuffers.set(idx, { id: tc.id ?? '', name: tc.function?.name ?? '', arguments: '' });
+              }
+              const buf = toolCallBuffers.get(idx)!;
+              if (tc.id) buf.id = tc.id;
+              if (tc.function?.name) buf.name = tc.function.name;
+              if (tc.function?.arguments) buf.arguments += tc.function.arguments;
+            }
+          }
+
+          if (finishReason === 'tool_calls' || finishReason === 'stop') {
+            for (const [, tc] of toolCallBuffers) {
+              let input: Record<string, unknown> = {};
+              try { input = JSON.parse(tc.arguments || '{}'); } catch { /* empty */ }
+              yield { type: 'tool_use', id: tc.id, name: tc.name, input };
+            }
+            toolCallBuffers.clear();
+          }
+        } catch {
+          // Skip malformed JSON
+        }
+      }
+    }
+
+    for (const [, tc] of toolCallBuffers) {
+      let input: Record<string, unknown> = {};
+      try { input = JSON.parse(tc.arguments || '{}'); } catch { /* empty */ }
+      yield { type: 'tool_use', id: tc.id, name: tc.name, input };
+    }
+    yield { type: 'message_end' };
   },
 };

@@ -1,7 +1,7 @@
 import * as readline from 'readline';
 import { hasConfig, loadConfig } from '../lib/config';
-import { getProvider, getAllProviders } from '../lib/providers/index';
-import type { ChatMessage } from '../lib/providers/types';
+import { getProvider, getAllProviders, getToolProvider } from '../lib/providers/index';
+import type { ChatMessage, ChatMessageExtended, ToolChatProvider } from '../lib/providers/types';
 import { buildSystemPrompt } from '../lib/system-prompt';
 import { createConversation, saveConversation, listConversations } from '../lib/conversation';
 import {
@@ -9,6 +9,9 @@ import {
   printUserPrompt,
   printAssistantHeader,
   renderStreamingResponse,
+  renderToolStreamingResponse,
+  printToolCall,
+  printToolResult,
   printHelp,
   printConfig,
   printHistory,
@@ -18,6 +21,11 @@ import {
 } from '../lib/chat-renderer';
 import { setup } from './setup';
 import { EngramRouter, loadRoutingConfig } from '../lib/router/index';
+import { ToolRegistry } from '../lib/tools/registry';
+import { registerBuiltins } from '../lib/tools/builtins/index';
+import { loadCustomTools } from '../lib/tools/loader';
+import { chatWithToolLoop } from '../lib/tools/executor';
+import type { AutonomyLevel } from '../lib/team-types';
 
 interface ChatOptions {
   provider?: string;
@@ -54,7 +62,7 @@ export async function chat(options: ChatOptions = {}): Promise<void> {
 
   // Create conversation
   let conversation = createConversation(providerId, modelId);
-  const messages: ChatMessage[] = [
+  const messages: ChatMessageExtended[] = [
     { role: 'system', content: systemPrompt },
   ];
 
@@ -64,6 +72,29 @@ export async function chat(options: ChatOptions = {}): Promise<void> {
   if (config.provider.apiKey) apiKeys[providerId] = config.provider.apiKey;
   if (config.routing?.openrouterApiKey) apiKeys['openrouter'] = config.routing.openrouterApiKey;
   const router = new EngramRouter(routingConfig, getAllProviders(), apiKeys);
+
+  // Initialize tool registry
+  const toolRegistry = new ToolRegistry();
+  registerBuiltins(toolRegistry);
+  try {
+    const customTools = await loadCustomTools();
+    for (const tool of customTools) {
+      toolRegistry.register(tool);
+    }
+  } catch {
+    // Custom tool loading is best-effort
+  }
+
+  // Get tool-capable provider (if supported)
+  let toolProvider: ToolChatProvider | null = null;
+  try {
+    toolProvider = getToolProvider(providerId);
+  } catch {
+    // Provider doesn't support tools — chat will fall back to plain text
+  }
+
+  // Determine autonomy level from config
+  const autonomyLevel: AutonomyLevel = config.autonomy_level ?? 'ACT_SAFE';
 
   printWelcome(config.aiName, modelId, provider.name);
 
@@ -144,25 +175,54 @@ export async function chat(options: ChatOptions = {}): Promise<void> {
       // Get AI response
       printAssistantHeader(config.aiName);
 
-      const chatConfig = {
-        model: modelId,
-        messages: [...messages],
-        apiKey: config.provider.apiKey,
-        baseUrl: config.provider.baseUrl,
-      };
-
       (async () => {
         try {
-          // Use router if routing is enabled, otherwise direct provider call
-          const stream = routingConfig.enabled
-            ? router.chat(chatConfig)
-            : provider.chat(chatConfig);
-          const fullResponse = await renderStreamingResponse(stream);
+          let fullResponse: string;
 
-          // Show routing info if routing is active
-          if (routingConfig.enabled) {
-            const info = router.getLastRoutingInfo();
-            if (info) printRoutingInfo(info);
+          if (toolProvider && !routingConfig.enabled) {
+            // Tool-enabled chat loop
+            const toolConfig = {
+              model: modelId,
+              messages: [...messages],
+              apiKey: config.provider.apiKey,
+              baseUrl: config.provider.baseUrl,
+            };
+
+            const stream = chatWithToolLoop({
+              provider: toolProvider,
+              config: toolConfig,
+              registry: toolRegistry,
+              autonomyLevel,
+              onToolCall: (name, toolInput) => printToolCall(name, toolInput),
+              onToolResult: (name, result, isError) => {
+                printToolResult(name, result, isError);
+                // Re-print header for continued response
+                printAssistantHeader(config.aiName);
+              },
+            });
+            fullResponse = await renderToolStreamingResponse(stream);
+          } else {
+            // Plain text chat (routing or no tool support)
+            const chatConfig = {
+              model: modelId,
+              messages: messages.map(m => ({
+                role: m.role as 'system' | 'user' | 'assistant',
+                content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
+              })),
+              apiKey: config.provider.apiKey,
+              baseUrl: config.provider.baseUrl,
+            };
+
+            const stream = routingConfig.enabled
+              ? router.chat(chatConfig)
+              : provider.chat(chatConfig);
+            fullResponse = await renderStreamingResponse(stream);
+
+            // Show routing info if routing is active
+            if (routingConfig.enabled) {
+              const info = router.getLastRoutingInfo();
+              if (info) printRoutingInfo(info);
+            }
           }
 
           messages.push({ role: 'assistant', content: fullResponse });
