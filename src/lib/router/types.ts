@@ -68,6 +68,7 @@ export interface RoutingConfig {
     dailyLimitCents: number;
     warningThresholdPercent: number;
   };
+  privacy?: import('../privacy/types').PrivacyConfig;
   models: Record<string, ModelInfo>;
 }
 
