@@ -96,6 +96,10 @@ export function runToolHooks(
 /**
  * Check if a tool call would violate any active ISC anti-criteria.
  * Returns the violated criterion or null if all clear.
+ *
+ * Logic:
+ * - If appliesTo is empty/undefined → anti-criterion applies to ALL tools (catch-all)
+ * - If appliesTo lists specific tools → only applies to those tools
  */
 function checkISCAntiCriteria(
   toolName: string,
@@ -106,12 +110,8 @@ function checkISCAntiCriteria(
     if (ac.appliesTo && ac.appliesTo.length > 0) {
       if (!ac.appliesTo.includes(toolName)) continue;
     }
-    // Anti-criterion applies — this is a violation
-    // In practice, more sophisticated checks would inspect tool args,
-    // but tool-level blocking is the foundation
-    if (ac.appliesTo?.includes(toolName)) {
-      return ac;
-    }
+    // Anti-criterion applies to this tool (either catch-all or tool is in appliesTo)
+    return ac;
   }
   return null;
 }
