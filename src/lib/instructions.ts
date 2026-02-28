@@ -1,19 +1,78 @@
 import type { InitConfig } from './templates';
+import { existsSync, readFileSync } from 'fs';
+import { join } from 'path';
+
+/**
+ * Load ISC carry-forward criteria from previous session.
+ * Reads MEMORY/isc-deltas.jsonl and finds unresolved criteria.
+ */
+function loadISCCarryForward(engramDir: string): string | null {
+  const deltasPath = join(engramDir, 'MEMORY', 'isc-deltas.jsonl');
+  if (!existsSync(deltasPath)) return null;
+
+  try {
+    const lines = readFileSync(deltasPath, 'utf-8').trim().split('\n').filter(Boolean);
+    if (lines.length === 0) return null;
+
+    // Get the last entry
+    const lastDelta = JSON.parse(lines[lines.length - 1]);
+    if (!lastDelta.pending || lastDelta.pending.length === 0) return null;
+
+    const pendingList = lastDelta.pending
+      .map((c: { id: string; criterion: string }) => `  - ${c.id}: ${c.criterion}`)
+      .join('\n');
+
+    return `## ISC Carry-Forward
+
+These criteria from the previous session remain unverified:
+${pendingList}
+
+*Review and resolve these before starting new work, or carry them forward if still relevant.*`;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Load ISC Profile from constitution.md if it exists.
+ */
+function loadISCProfile(engramDir: string): string | null {
+  const constitutionPath = join(engramDir, 'constitution.md');
+  if (!existsSync(constitutionPath)) return null;
+
+  try {
+    const content = readFileSync(constitutionPath, 'utf-8');
+    const iscMatch = content.match(/## ISC Profile\n([\s\S]*?)(?=\n## |\n*$)/);
+    if (!iscMatch) return null;
+
+    return `## ISC Profile (Always Active)\n${iscMatch[1].trim()}`;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Render INSTRUCTIONS.md — a single-document system prompt for Claude Projects.
  * Must stay under ~4000 words for practical Claude Projects usage.
+ * Auto-injects ISC Profile and carry-forward criteria when available.
  */
-export function renderInstructionsMd(config: InitConfig): string {
+export function renderInstructionsMd(config: InitConfig, engramDir?: string): string {
   const personalityBlock = Object.entries(config.personality)
     .map(([key, value]) => `  ${key}: ${value}`)
     .join('\n');
+
+  // Auto-load ISC context
+  const resolvedDir = engramDir || join(process.env.HOME || '', '.claude');
+  const iscProfile = loadISCProfile(resolvedDir);
+  const iscCarryForward = loadISCCarryForward(resolvedDir);
+
+  const iscSection = [iscProfile, iscCarryForward].filter(Boolean).join('\n\n');
 
   return `# ${config.aiName} — Personal AI Assistant
 
 You are **${config.aiName}**, ${config.userName}'s personal AI assistant.
 
-## Identity
+${iscSection ? iscSection + '\n\n' : ''}## Identity
 
 - Your name is **${config.aiName}**
 - The user's name is **${config.userName}**

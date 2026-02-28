@@ -17,6 +17,7 @@ import { agentGenerate } from './commands/agent-generate';
 import { orgPolicySet, orgPolicyGet, orgPolicyPropagate } from './commands/org';
 import { complianceExport } from './commands/compliance';
 import { chainRun, chainList as chainListCmd } from './commands/chain';
+import { iscCommand } from './commands/isc';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { getFrameworkRoot } from './lib/paths';
@@ -235,6 +236,32 @@ orgPolicy
   .command('propagate')
   .description('Push policy to all teams')
   .action(orgPolicyPropagate);
+
+// ── ISC (Ideal State Criteria) ─────────────────────────────────
+
+const isc = program
+  .command('isc')
+  .description('Inspect and manage ISC (Ideal State Criteria)');
+
+isc
+  .command('init')
+  .description('Create ISC profile in constitution')
+  .action(() => iscCommand('init', []));
+
+isc
+  .command('status')
+  .description('Show current ISC state')
+  .action(() => iscCommand('status', []));
+
+isc
+  .command('add <criterion>')
+  .description('Add a criterion (format: "text | Verify: method")')
+  .action((criterion: string) => iscCommand('add', [criterion]));
+
+isc
+  .command('log')
+  .description('Show ISC evolution history')
+  .action(() => iscCommand('log', []));
 
 // ── Compliance ──────────────────────────────────────────────────
 

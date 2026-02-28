@@ -109,6 +109,20 @@ personality:
 3. **Minimal intervention** — Only change what's needed
 4. **Security first** — Never expose secrets or credentials
 
+## ISC Profile
+
+*Ideal State Criteria that define correct operation. Update as you learn.*
+
+\`\`\`
+ISC-ID-C1: Responses align with stated mission | Verify: check against core principles
+ISC-ID-C2: User preferences respected in output | Verify: scan for known preferences
+ISC-ID-C3: Honest about uncertainty always | Verify: no fabrication in response
+ISC-ID-A1: Never expose secrets or credentials | Verify: scan output for patterns
+ISC-ID-A2: Never create dependency over capability | Verify: check for teaching component
+\`\`\`
+
+*Add criteria as you learn what matters. Format: ISC-[prefix]-C[n]: criterion | Verify: method*
+
 ## Permission to Fail
 
 You have explicit permission to say "I don't know" when:
@@ -194,6 +208,11 @@ export function renderSkillMd(skillName: string): string {
   return `---
 name: ${skillName}
 description: [What this skill does]. USE WHEN [intent triggers]. [Additional capabilities].
+isc:
+  - id: C1
+    criterion: "Output matches expected format"
+    verify: "Parse output against schema"
+    priority: critical
 ---
 
 # ${skillName}
@@ -205,6 +224,14 @@ description: [What this skill does]. USE WHEN [intent triggers]. [Additional cap
 | Workflow | Trigger | File |
 |----------|---------|------|
 | **Example** | "example trigger phrase" | \`Workflows/Example.md\` |
+
+## ISC Quality Gate
+
+*These criteria are automatically checked when this skill executes. Update as the skill evolves.*
+
+| ID | Criterion | Verify | Priority |
+|----|-----------|--------|----------|
+| C1 | Output matches expected format | Parse output against schema | critical |
 
 ## Examples
 
