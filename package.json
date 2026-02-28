@@ -15,7 +15,8 @@
     "typecheck": "tsc --noEmit"
   },
   "files": [
-    "dist/",
+    "dist/cli.js",
+    "dist/hooks/",
     "hooks/",
     "skills/",
     "templates/",
