@@ -50,6 +50,15 @@ export interface TokenConfig {
   issuerUrl?: string;
   batchSize: number;
   refreshThreshold: number;
+  zkProof?: ZkProofConfig;
+}
+
+// ── ZK Trust Proofs (Phase 3) ──────────────────────────────────
+
+export interface ZkProofConfig {
+  enabled: boolean;
+  threshold: number;          // Minimum Vouch score (0-1000)
+  attestationTtlSecs: number; // How long attestations are valid (default 86400 = 24h)
 }
 
 // ── Defaults ─────────────────────────────────────────────────────

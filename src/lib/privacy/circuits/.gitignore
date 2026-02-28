@@ -1,0 +1,8 @@
+# Build artifacts (large, generated from trust-proof.circom)
+trust-proof.r1cs
+trust-proof.sym
+trust-proof_final.zkey
+trust-proof_0.zkey
+trust-proof_js/
+powersOfTau28_hez_final_15.ptau
+$HOME/

@@ -4,8 +4,14 @@ import { flattenAllSkills } from '../lib/flatten-skill';
 import { parseSkillFrontmatter, extractUseWhen } from '../lib/skill-parser';
 import { getFrameworkRoot, getSkillsDir } from '../lib/paths';
 
-const pkg = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf-8'));
-const ENGRAM_VERSION = pkg.version || '0.1.3';
+const ENGRAM_VERSION = (() => {
+  try {
+    const pkg = JSON.parse(readFileSync(join(getFrameworkRoot(), 'package.json'), 'utf-8'));
+    return pkg.version || '0.1.3';
+  } catch {
+    return '0.1.3';
+  }
+})();
 
 // ── Types ────────────────────────────────────────────────────────
 

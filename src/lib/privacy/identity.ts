@@ -125,3 +125,25 @@ export function getPublicKeyHex(): string | null {
   const identity = loadIdentity();
   return identity?.publicKeyHex ?? null;
 }
+
+/**
+ * Compute Poseidon identity commitment from the Nostr public key.
+ * Used as the identity_hash input to the ZK trust proof circuit.
+ * Splits the 32-byte x-only pubkey into two 128-bit halves,
+ * then hashes with Poseidon(hi, lo).
+ */
+export async function getIdentityCommitment(): Promise<string | null> {
+  const identity = loadIdentity();
+  if (!identity) return null;
+
+  const { buildPoseidon } = await import('circomlibjs');
+  const poseidon = await buildPoseidon();
+
+  // Split 32-byte (64-hex) pubkey into two 16-byte halves
+  const pubkeyHex = identity.publicKeyHex;
+  const hi = BigInt('0x' + pubkeyHex.slice(0, 32));  // first 16 bytes
+  const lo = BigInt('0x' + pubkeyHex.slice(32, 64));  // last 16 bytes
+
+  const commitment = poseidon([hi, lo]);
+  return poseidon.F.toString(commitment);
+}
