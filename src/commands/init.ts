@@ -17,6 +17,7 @@ import {
 } from '../lib/prompts';
 import { skillIndex } from './skill-index';
 import { getFrameworkRoot } from '../lib/paths';
+import { initIdentity, registerWithVouch } from '../lib/privacy/identity';
 
 const frameworkRoot = getFrameworkRoot();
 
@@ -226,6 +227,21 @@ export async function init(): Promise<void> {
     }
   }
 
+  // ── Generate Vouch identity ──────────────────────────────────────
+  console.log('  Generating Vouch identity...');
+  let identityStatus = 'created';
+  try {
+    const identity = await initIdentity();
+    identityStatus = identity.registered ? 'registered' : 'created';
+    // Fire-and-forget registration with Vouch API
+    registerWithVouch(identity).catch(() => {});
+    console.log(`    Pubkey: ${identity.publicKeyHex.slice(0, 16)}...`);
+  } catch {
+    identityStatus = 'skipped';
+    console.log('    Identity generation deferred (will retry on first use)');
+  }
+  console.log('');
+
   // ── Print success ─────────────────────────────────────────────────
   console.log(`  AI infrastructure initialized!`);
   console.log('');
@@ -233,6 +249,7 @@ export async function init(): Promise<void> {
   console.log(`    Config:  ~/.claude/`);
   console.log(`    Skills:  ${skillsCount} starter skills installed`);
   console.log(`    Hooks:   ${hooksCount} hooks active`);
+  console.log(`    Identity: ${identityStatus}`);
   console.log('');
   console.log('  Next steps:');
   console.log('    1. Open a new Claude Code session to activate');
