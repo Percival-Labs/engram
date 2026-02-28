@@ -3,10 +3,9 @@
 
 import type { ChatProvider, ChatMessage, ChatConfig } from '../providers/types';
 import type { RoutingConfig } from './types';
-import type { PrivacyConfig, RedactionMap, TokenConfig } from '../privacy/types';
+import type { PrivacyConfig, RedactionMap } from '../privacy/types';
 import { scrub, restore, getRulesForLevel, compileUserRules } from '../privacy/scrubber';
 import type { ProviderPrivacy } from '../privacy/types';
-import { popToken, needsRefresh, maybeRefresh, getTokenCount } from '../privacy/tokens';
 
 // ── Circuit breaker state (in-memory) ────────────────────────────
 
@@ -134,26 +133,6 @@ export async function* routeToProvider(
       }
     }
 
-    // ── Token Layer (Phase 2) ──────────────────────────────────────
-    // If blind-signed tokens are enabled, route through PL proxy
-    // instead of sending the user's API key directly.
-    const tokenConfig = privacy?.tokens;
-    if (tokenConfig?.enabled && provider.requiresApiKey) {
-      const token = popToken();
-      if (token) {
-        const proxyUrl = resolveProxyUrl(tokenConfig, pid);
-        if (proxyUrl) {
-          effectiveConfig = {
-            ...effectiveConfig,
-            baseUrl: proxyUrl,
-            apiKey: Buffer.from(token).toString('base64'),
-          };
-        }
-      }
-      // Fire-and-forget background refresh
-      maybeRefresh(tokenConfig).catch(() => {});
-    }
-
     try {
       const stream = provider.chat(effectiveConfig);
       let yielded = false;
@@ -180,25 +159,4 @@ export async function* routeToProvider(
   }
 
   throw lastError ?? new Error(`No available provider for model ${model}`);
-}
-
-// ── Proxy URL Resolution ──────────────────────────────────────────
-
-const VOUCH_PROXY_BASE = 'https://percivalvouch-api-production.up.railway.app/v1/proxy';
-
-/**
- * Resolve the proxy URL for a provider when using blind-signed tokens.
- * The proxy holds master API keys — users present tokens instead.
- */
-function resolveProxyUrl(config: TokenConfig, providerId: string): string | null {
-  switch (config.issuer) {
-    case 'vouch':
-      return `${VOUCH_PROXY_BASE}/${providerId}`;
-    case 'self-hosted':
-      return config.issuerUrl ? `${config.issuerUrl}/proxy/${providerId}` : null;
-    case 'openrouter':
-      return null; // Not yet implemented
-    default:
-      return null;
-  }
 }
