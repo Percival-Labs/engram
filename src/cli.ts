@@ -18,6 +18,7 @@ import { orgPolicySet, orgPolicyGet, orgPolicyPropagate } from './commands/org';
 import { complianceExport } from './commands/compliance';
 import { chainRun, chainList as chainListCmd } from './commands/chain';
 import { iscCommand } from './commands/isc';
+import { map } from './commands/map';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { getFrameworkRoot } from './lib/paths';
@@ -96,6 +97,13 @@ program
   .command('serve')
   .description('Start MCP memory server for Claude Desktop')
   .action(serve);
+
+program
+  .command('map')
+  .description('Visualize your Engram infrastructure as an interactive graph')
+  .option('-o, --output <path>', 'Output HTML file path')
+  .option('--no-open', 'Generate without opening browser')
+  .action(map);
 
 const pkg = program
   .command('package')

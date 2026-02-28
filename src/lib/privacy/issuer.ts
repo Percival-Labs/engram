@@ -79,13 +79,11 @@ async function importPublicKey(jwk: JsonWebKey): Promise<CryptoKey> {
 
 /**
  * Generate a new issuer keypair and persist to disk.
- * Uses RSA-2048 per Privacy Pass spec (RFC 9576/9577).
- * The @cloudflare/privacypass-ts library hardcodes Nk=256 (2048-bit),
- * so RSA-4096 is not compatible with the blind signature protocol.
+ * Uses RSA-4096 for blind signature security.
  */
 export async function generateIssuerKeys(): Promise<IssuerKeyPair> {
   const keys = await Issuer.generateKey(BlindRSAMode.PSS, {
-    modulusLength: 2048,
+    modulusLength: 4096,
     publicExponent: Uint8Array.from([1, 0, 1]),
   });
 
@@ -94,7 +92,7 @@ export async function generateIssuerKeys(): Promise<IssuerKeyPair> {
     publicKeyJwk: await exportKey(keys.publicKey),
     createdAt: new Date().toISOString(),
     version: 1,
-    modulusLength: 2048,
+    modulusLength: 4096,
   };
 
   const dir = join(getEngramHome(), 'privacy');
@@ -109,6 +107,7 @@ export async function generateIssuerKeys(): Promise<IssuerKeyPair> {
 /**
  * Load existing issuer keys or generate new ones.
  * Handles both legacy (flat) and new (IssuerKeyFile) formats.
+ * Auto-regenerates RSA-2048 keys to RSA-4096.
  */
 export async function loadOrCreateIssuerKeys(): Promise<IssuerKeyPair> {
   const path = getKeysPath();
@@ -118,11 +117,31 @@ export async function loadOrCreateIssuerKeys(): Promise<IssuerKeyPair> {
     // New format with current/previous
     if (raw.current) {
       const keyFile = raw as IssuerKeyFile;
+      // Check if existing key is weak (RSA-2048)
+      if (keyFile.current.modulusLength && keyFile.current.modulusLength < 4096) {
+        return rotateKeys(keyFile);
+      }
+      // Legacy keys without modulusLength field — check JWK modulus
+      if (!keyFile.current.modulusLength) {
+        const nLen = keyFile.current.publicKeyJwk.n?.length ?? 0;
+        // Base64url-encoded 4096-bit modulus is ~683 chars; 2048-bit is ~342
+        if (nLen < 600) {
+          return rotateKeys(keyFile);
+        }
+      }
       return keyFile.current;
     }
 
-    // Legacy flat format — wrap in new format
+    // Legacy flat format — migrate
     const legacy = raw as IssuerKeyPair;
+    const nLen = legacy.publicKeyJwk.n?.length ?? 0;
+    if (nLen < 600) {
+      // Weak key — regenerate with old as previous
+      const keyFile: IssuerKeyFile = { current: legacy, previous: undefined };
+      return rotateKeys(keyFile);
+    }
+
+    // Strong legacy key — wrap in new format
     legacy.version = legacy.version ?? 1;
     const keyFile: IssuerKeyFile = { current: legacy };
     writeFileSync(path, JSON.stringify(keyFile, null, 2), { mode: 0o600 });
@@ -132,12 +151,12 @@ export async function loadOrCreateIssuerKeys(): Promise<IssuerKeyPair> {
 }
 
 /**
- * Rotate to a new key, keeping the old key as `previous`
+ * Rotate to a new RSA-4096 key, keeping the old key as `previous`
  * for verifying tokens issued under the prior key.
  */
-export async function rotateKeys(existing: IssuerKeyFile): Promise<IssuerKeyPair> {
+async function rotateKeys(existing: IssuerKeyFile): Promise<IssuerKeyPair> {
   const newKeys = await Issuer.generateKey(BlindRSAMode.PSS, {
-    modulusLength: 2048,
+    modulusLength: 4096,
     publicExponent: Uint8Array.from([1, 0, 1]),
   });
 
@@ -147,7 +166,7 @@ export async function rotateKeys(existing: IssuerKeyFile): Promise<IssuerKeyPair
     publicKeyJwk: await exportKey(newKeys.publicKey),
     createdAt: new Date().toISOString(),
     version,
-    modulusLength: 2048,
+    modulusLength: 4096,
   };
 
   const keyFile: IssuerKeyFile = {
