@@ -1,6 +1,6 @@
 {
   "name": "engram-harness",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "Engram — The AI Harness for Everyone. Personal AI infrastructure that turns any model into your AI.",
   "type": "module",
   "bin": {
