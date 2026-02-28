@@ -9,7 +9,18 @@ engram-bundle/
 # Test artifacts
 $HOME/
 
+# Privacy layer — unreleased, not ready for public repo
+src/lib/privacy/
+scripts/patch-web-worker.js
+
+# ZK circuit artifacts
+*.zkey
+*.r1cs
+*.sym
+*.ptau
+
 # Internal planning docs
 PRODUCT-SPEC.md
 PROJECT-SPEC.md
 PL-AGENT-HANDOFF.md
+specs/SwarmOrchestration.md
