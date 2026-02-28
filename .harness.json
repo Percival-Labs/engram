@@ -3,6 +3,6 @@
   "type": "project",
   "status": "active",
   "phase": "building",
-  "focus": "v0.1.4 published to npm (Feb 27). Fresh install test passed — 2 critical bugs fixed (package size 67MB→388KB, global install crash). Agent framework committed but not pushed. Next: M1 MacBook real hardware test (Feb 28), then content marketing push.",
+  "focus": "v0.1.3 live. OpenClaw export command shipped (engram export --format openclaw). Ian using Engram as harness for custom OpenClaw bot. Next: cross-platform loaders, content marketing.",
   "description": "Personal AI infrastructure — the bridge between domain expertise and AI power. Audience: Domain Translators. Engram authors skills, OpenClaw runs them, Vouch verifies them."
 }

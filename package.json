@@ -12,8 +12,7 @@
     "build:fix-shebang": "node -e \"const f=require('fs');const p='dist/cli.js';let c=f.readFileSync(p,'utf-8');c=c.replace(/^#!.*\\n/,'#!/usr/bin/env node\\n');f.writeFileSync(p,c);f.chmodSync(p,0o755)\"",
     "build:hooks": "bun run scripts/build-hooks.ts",
     "dev": "bun run src/cli.ts",
-    "typecheck": "tsc --noEmit",
-    "postinstall": "node scripts/patch-web-worker.js"
+    "typecheck": "tsc --noEmit"
   },
   "files": [
     "dist/cli.js",
@@ -31,15 +30,12 @@
     "@modelcontextprotocol/sdk": "^1.26.0",
     "@noble/secp256k1": "^3.0.0",
     "@scure/base": "^2.0.0",
-    "circomlibjs": "^0.1.7",
     "commander": "^13.0.0",
-    "snarkjs": "^0.7.6",
     "yaml": "^2.7.0"
   },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/node": "^22.0.0",
-    "circomlib": "^2.0.5",
     "typescript": "^5.7.0"
   },
   "publishConfig": {

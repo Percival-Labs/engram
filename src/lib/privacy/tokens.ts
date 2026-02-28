@@ -246,8 +246,6 @@ export function needsRefresh(config: TokenConfig): boolean {
 
 /**
  * Background refresh — request more tokens if cache is low.
- * When ZK proof auth is enabled, generates a proof and uses it
- * instead of NIP-98 auth (identity never revealed to issuer).
  * Non-blocking, won't throw.
  */
 export async function maybeRefresh(config: TokenConfig, authHeader?: string): Promise<void> {
@@ -260,16 +258,7 @@ export async function maybeRefresh(config: TokenConfig, authHeader?: string): Pr
 
   isRefreshing = true;
   try {
-    let effectiveAuth = authHeader;
-
-    // If ZK proof is enabled, use it instead of NIP-98
-    if (config.zkProof?.enabled && authHeader) {
-      const { getOrGenerateProof, buildZkAuthHeader } = await import('./vouch-proof');
-      const proof = await getOrGenerateProof(config.zkProof, authHeader);
-      effectiveAuth = buildZkAuthHeader(proof);
-    }
-
-    await requestTokenBatch(issuerUrl, config.batchSize, effectiveAuth);
+    await requestTokenBatch(issuerUrl, config.batchSize, authHeader);
   } catch (err) {
     console.error(`[Privacy] Token refresh failed: ${err}`);
   } finally {

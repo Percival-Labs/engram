@@ -14,7 +14,6 @@ export type {
   ScrubResult,
   UserRedactionRule,
   TokenConfig,
-  ZkProofConfig,
 } from './types';
 export { getDefaultPrivacyConfig } from './types';
 
@@ -44,30 +43,4 @@ export {
   loadIdentity,
   registerWithVouch,
   getPublicKeyHex,
-  getIdentityCommitment,
 } from './identity';
-
-// ZK Trust Proofs (Phase 3)
-export {
-  generateTrustProof,
-  generateCachedTrustProof,
-  verifyTrustProof,
-  verifyTrustProofStrict,
-  loadCachedProof,
-  serializeProof,
-  deserializeProof,
-} from './zk-proof';
-export type {
-  TrustProofInputs,
-  ZkProof,
-  ZkProofCached,
-} from './zk-proof';
-
-// Vouch Proof Orchestration (Phase 3)
-export {
-  fetchAttestation,
-  getOrGenerateProof,
-  hasCachedProof,
-  buildZkAuthHeader,
-} from './vouch-proof';
-export type { VouchAttestation } from './vouch-proof';
