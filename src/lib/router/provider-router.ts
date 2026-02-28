@@ -1,11 +1,8 @@
 // ── Layer 3: Provider Router ─────────────────────────────────────
-// Model selection, fallback chains, circuit breakers, privacy layer.
+// Model selection, fallback chains, circuit breakers.
 
 import type { ChatProvider, ChatMessage, ChatConfig } from '../providers/types';
 import type { RoutingConfig } from './types';
-import type { PrivacyConfig, RedactionMap } from '../privacy/types';
-import { scrub, restore, getRulesForLevel, compileUserRules } from '../privacy/scrubber';
-import type { ProviderPrivacy } from '../privacy/types';
 
 // ── Circuit breaker state (in-memory) ────────────────────────────
 
@@ -112,35 +109,13 @@ export async function* routeToProvider(
       baseUrl: provider.defaultBaseUrl,
     };
 
-    // ── Privacy Layer ──────────────────────────────────────────
-    // Strip PII from messages before external API calls.
-    // Local providers (Ollama, anything without requiresApiKey) bypass.
-    const privacy = config.privacy;
-    let effectiveConfig = chatConfig;
-    let redactions: RedactionMap | null = null;
-
-    if (privacy?.enabled && provider.requiresApiKey) {
-      const providerLevel = privacy.providers[pid] as ProviderPrivacy | undefined;
-      if (providerLevel !== 'skip') {
-        const level = providerLevel ?? privacy.level;
-        const rules = [
-          ...getRulesForLevel(level),
-          ...compileUserRules(privacy.rules),
-        ];
-        const result = scrub(chatConfig.messages, rules);
-        effectiveConfig = { ...chatConfig, messages: result.messages };
-        redactions = result.redactions;
-      }
-    }
-
     try {
-      const stream = provider.chat(effectiveConfig);
+      const stream = provider.chat(chatConfig);
       let yielded = false;
 
       for await (const token of stream) {
         yielded = true;
-        // Re-contextualize response if we scrubbed outbound
-        yield redactions ? restore(token, redactions) : token;
+        yield token;
       }
 
       if (yielded) {
