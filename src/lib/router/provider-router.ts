@@ -1,8 +1,12 @@
 // ── Layer 3: Provider Router ─────────────────────────────────────
 // Model selection, fallback chains, circuit breakers.
+// Privacy-aware: scrubs PII before external calls, enforces fail-closed tokens.
 
 import type { ChatProvider, ChatMessage, ChatConfig } from '../providers/types';
 import type { RoutingConfig } from './types';
+import type { PrivacyConfig, PrivacyLevel, RedactionMap } from '../privacy/types';
+import { scrub, clearRedactions, getRulesForLevel, compileUserRules } from '../privacy/scrubber';
+import { getTokenCount, popToken, maybeRefresh } from '../privacy/tokens';
 
 // ── Circuit breaker state (in-memory) ────────────────────────────
 
@@ -73,11 +77,47 @@ function getApiKeyForProvider(providerId: string): string | undefined {
   return undefined;
 }
 
+// ── Privacy Layer ────────────────────────────────────────────────
+
+/** Last redaction map from the most recent privacy-scrubbed request. */
+let lastRedactions: RedactionMap | null = null;
+
+/**
+ * Get the redaction map from the last privacy-scrubbed request.
+ * Use with `restore()` to re-contextualize LLM responses.
+ * Returns null if privacy was not active for the last request.
+ */
+export function getLastRedactionMap(): RedactionMap | null {
+  return lastRedactions;
+}
+
+function getPrivacyLevel(providerId: string, privacy: PrivacyConfig): PrivacyLevel | 'skip' {
+  return privacy.providers[providerId] ?? privacy.level;
+}
+
+function scrubMessages(
+  messages: ChatMessage[],
+  level: PrivacyLevel,
+  userRules: PrivacyConfig['rules'],
+): { messages: ChatMessage[]; redactions: RedactionMap } {
+  const rules = [
+    ...getRulesForLevel(level),
+    ...compileUserRules(userRules),
+  ];
+  const result = scrub(messages, rules);
+  return { messages: result.messages, redactions: result.redactions };
+}
+
 // ── Main router ──────────────────────────────────────────────────
 
 /**
  * Route a request to a specific model/provider, with fallback chain
  * and circuit breaker protection.
+ *
+ * When `privacy` is provided:
+ *   - Messages are scrubbed per the provider's privacy level before sending
+ *   - Redaction map is stored (accessible via `getLastRedactionMap()`)
+ *   - Fail-closed: if tokens are enabled but exhausted, non-local providers are refused
  */
 export async function* routeToProvider(
   model: string,
@@ -85,9 +125,23 @@ export async function* routeToProvider(
   messages: ChatMessage[],
   config: RoutingConfig,
   providers: Record<string, ChatProvider>,
+  privacy?: PrivacyConfig,
 ): AsyncGenerator<string> {
+  // Clear previous redaction map
+  if (lastRedactions) {
+    clearRedactions(lastRedactions);
+    lastRedactions = null;
+  }
+
   // Build the attempt chain: primary provider + fallback chain
   const attemptChain = [providerId, ...config.fallback.chain.filter(p => p !== providerId)];
+
+  // Privacy: check fail-closed token mode
+  const tokenModeActive = privacy?.enabled && privacy.tokens?.enabled;
+  if (tokenModeActive) {
+    // Fire-and-forget refresh if tokens are low
+    maybeRefresh(privacy.tokens!).catch(() => {});
+  }
 
   let lastError: Error | null = null;
 
@@ -102,9 +156,27 @@ export async function* routeToProvider(
     const apiKey = getApiKeyForProvider(pid);
     if (provider.requiresApiKey && !apiKey) continue;
 
+    // Privacy: fail-closed token mode
+    // If tokens are enabled but exhausted, refuse non-local providers
+    // to prevent identity leakage via raw API key
+    if (tokenModeActive && pid !== 'ollama' && getTokenCount() === 0) {
+      continue;
+    }
+
+    // Privacy: scrub messages for this provider
+    let effectiveMessages = messages;
+    if (privacy?.enabled) {
+      const level = getPrivacyLevel(pid, privacy);
+      if (level !== 'skip') {
+        const scrubbed = scrubMessages(effectiveMessages, level, privacy.rules);
+        effectiveMessages = scrubbed.messages;
+        lastRedactions = scrubbed.redactions;
+      }
+    }
+
     const chatConfig: ChatConfig = {
       model,
-      messages,
+      messages: effectiveMessages,
       apiKey,
       baseUrl: provider.defaultBaseUrl,
     };
@@ -131,6 +203,12 @@ export async function* routeToProvider(
         await new Promise(resolve => setTimeout(resolve, config.fallback.retryDelayMs));
       }
     }
+  }
+
+  // Clean up redaction map on failure
+  if (lastRedactions) {
+    clearRedactions(lastRedactions);
+    lastRedactions = null;
   }
 
   throw lastError ?? new Error(`No available provider for model ${model}`);

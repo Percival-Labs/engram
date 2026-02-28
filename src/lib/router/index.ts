@@ -6,17 +6,21 @@ import type { ChatProvider, ChatConfig, ChatMessage } from '../providers/types';
 import type { RoutingConfig, CascadeResult, RoutingInfo, TaskComplexity } from './types';
 import { classifyTask } from './classifier';
 import { executeCascade, lastCascadeResult } from './cascade';
-import { routeToProvider, registerApiKey } from './provider-router';
+import { routeToProvider, registerApiKey, getLastRedactionMap } from './provider-router';
+import type { PrivacyConfig } from '../privacy/types';
+import { scrub, restore, clearRedactions, getRulesForLevel, compileUserRules } from '../privacy/scrubber';
 import { getModelForComplexity, estimateCost } from './model-registry';
 import { logUsage, getTodayCostCents } from './usage-tracker';
 
 export class EngramRouter {
   private lastInfo: RoutingInfo | null = null;
+  private privacyConfig?: PrivacyConfig;
 
   constructor(
     private config: RoutingConfig,
     private providers: Record<string, ChatProvider>,
     apiKeys?: Record<string, string>,
+    privacy?: PrivacyConfig,
   ) {
     // Pre-register API keys so provider-router can use them
     if (apiKeys) {
@@ -24,6 +28,7 @@ export class EngramRouter {
         registerApiKey(pid, key);
       }
     }
+    this.privacyConfig = privacy;
   }
 
   /**
@@ -76,11 +81,20 @@ export class EngramRouter {
 
     const stream = routeToProvider(
       target.model, target.provider, chatConfig.messages, this.config, this.providers,
+      this.privacyConfig,
     );
 
     for await (const token of stream) {
       fullResponse += token;
       yield token;
+    }
+
+    // Privacy: restore redacted values in the full response if configured
+    if (this.privacyConfig?.enabled && this.privacyConfig.restoreResponses !== false) {
+      const redactions = getLastRedactionMap();
+      if (redactions && redactions.size > 0) {
+        restore(fullResponse, redactions);
+      }
     }
 
     // Log usage
@@ -140,7 +154,21 @@ export class EngramRouter {
       throw new Error(`Provider '${providerId}' not available for passthrough`);
     }
 
-    yield* provider.chat(chatConfig);
+    // Privacy: scrub messages even in passthrough mode
+    let effectiveConfig = chatConfig;
+    if (this.privacyConfig?.enabled) {
+      const level = this.privacyConfig.providers[providerId] ?? this.privacyConfig.level;
+      if (level !== 'skip') {
+        const rules = [
+          ...getRulesForLevel(level),
+          ...compileUserRules(this.privacyConfig.rules),
+        ];
+        const { messages: scrubbed } = scrub(chatConfig.messages, rules);
+        effectiveConfig = { ...chatConfig, messages: scrubbed };
+      }
+    }
+
+    yield* provider.chat(effectiveConfig);
   }
 
   private resolveProviderId(chatConfig: ChatConfig): string {
@@ -199,4 +227,5 @@ export { loadRoutingConfig, getDefaultRoutingConfig } from './config';
 export { getModelForComplexity, estimateCost, MODEL_REGISTRY } from './model-registry';
 export { logUsage, getDailyUsage, getDailySummary, getUsageRange } from './usage-tracker';
 export { validateResponse } from './quality';
+export { getLastRedactionMap } from './provider-router';
 export type { RoutingConfig, RoutingInfo, CascadeResult, TaskComplexity, UsageEntry, UsageSummary } from './types';

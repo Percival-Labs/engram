@@ -9,15 +9,19 @@ engram-bundle/
 # Test artifacts
 $HOME/
 
-# Privacy layer — unreleased, not ready for public repo
-src/lib/privacy/
+# Privacy layer build artifacts
 scripts/patch-web-worker.js
 
-# ZK circuit artifacts
+# ZK circuit artifacts (downloaded on first use from GitHub Releases)
 *.zkey
 *.r1cs
 *.sym
 *.ptau
+*.wasm
+# Compiled witness helpers (part of circuit artifacts bundle)
+src/lib/privacy/circuits/trust-proof_js/generate_witness.js
+src/lib/privacy/circuits/trust-proof_js/witness_calculator.js
+# Keep verification_key.json and circom source (small, needed for verification)
 
 # Internal planning docs
 PRODUCT-SPEC.md
