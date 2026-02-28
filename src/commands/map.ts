@@ -519,13 +519,13 @@ function generateHTML(nodes: GraphNode[], edges: GraphEdge[]): string {
   }
 
   .link {
-    stroke-opacity: 0.15;
-    stroke-width: 1;
+    stroke-opacity: 0.35;
+    stroke-width: 1.2;
   }
 
   .link.highlighted {
-    stroke-opacity: 0.6;
-    stroke-width: 2;
+    stroke-opacity: 0.8;
+    stroke-width: 2.5;
   }
 
   #tooltip {
@@ -665,17 +665,65 @@ rawEdges.forEach(e => {
   connectionCount[e.target] = (connectionCount[e.target] || 0) + 1;
 });
 
+// ── Type-based cluster positions ──────────────────────────────
+// Arrange type clusters in a radial layout around center
+const clusterPositions = {
+  context: { x: 0,    y: 0    },  // Center — the core
+  skill:   { x: -350, y: -250 },  // Upper-left — largest group
+  memory:  { x: 350,  y: -250 },  // Upper-right
+  hook:    { x: -420, y: 300  },  // Lower-left — pushed further out
+  team:    { x: 420,  y: 300  },  // Lower-right
+  chain:   { x: 0,    y: 450  },  // Bottom-center
+};
+
 // ── Force simulation ──────────────────────────────────────────
 const simulation = d3.forceSimulation(rawNodes)
-  .force('link', d3.forceLink(rawEdges).id(d => d.id).distance(80).strength(0.3))
-  .force('charge', d3.forceManyBody().strength(-120).distanceMax(400))
-  .force('center', d3.forceCenter(0, 0))
-  .force('collision', d3.forceCollide().radius(d => getRadius(d) + 4))
-  .force('x', d3.forceX().strength(d => d.type === 'context' ? 0.15 : 0.02))
-  .force('y', d3.forceY().strength(d => d.type === 'context' ? 0.15 : 0.02))
-  .alphaDecay(0.02);
+  .force('link', d3.forceLink(rawEdges).id(d => d.id).distance(120).strength(0.12))
+  .force('charge', d3.forceManyBody().strength(-180).distanceMax(500))
+  .force('center', d3.forceCenter(0, 0).strength(0.01))
+  .force('collision', d3.forceCollide().radius(d => getRadius(d) + 14))
+  .force('clusterX', d3.forceX(d => (clusterPositions[d.type] || clusterPositions.context).x).strength(d => d.type === 'context' ? 0.25 : 0.12))
+  .force('clusterY', d3.forceY(d => (clusterPositions[d.type] || clusterPositions.context).y).strength(d => d.type === 'context' ? 0.25 : 0.12))
+  .alphaDecay(0.015);
 
 // ── Draw ──────────────────────────────────────────────────────
+// Cluster zone labels (rendered behind everything, positions updated on tick)
+const zoneGroup = g.append('g').attr('class', 'zone-labels');
+const zoneTypes = ['skill', 'memory', 'hook', 'context', 'team', 'chain'];
+const zoneNames = { skill: 'SKILLS', memory: 'MEMORY', hook: 'HOOKS', context: 'CONTEXT', team: 'TEAMS', chain: 'CHAINS' };
+const zoneLabelEls = {};
+zoneTypes.forEach(type => {
+  if (rawNodes.some(n => n.type === type)) {
+    zoneLabelEls[type] = zoneGroup.append('text')
+      .attr('text-anchor', 'middle')
+      .attr('fill', typeColors[type])
+      .attr('fill-opacity', 0.12)
+      .attr('font-size', '28px')
+      .attr('font-weight', '700')
+      .attr('letter-spacing', '4px')
+      .text(zoneNames[type]);
+  }
+});
+
+function updateZoneLabels() {
+  zoneTypes.forEach(type => {
+    if (!zoneLabelEls[type]) return;
+    const nodesOfType = rawNodes.filter(n => n.type === type);
+    if (nodesOfType.length === 0) return;
+    // Compute centroid
+    let cx = 0, cy = 0;
+    nodesOfType.forEach(n => { cx += n.x || 0; cy += n.y || 0; });
+    cx /= nodesOfType.length;
+    cy /= nodesOfType.length;
+    // Radial placement: push label outward from graph center (0,0)
+    const dist = Math.sqrt(cx * cx + cy * cy) || 1;
+    const offsetDist = 50; // push label this far beyond the centroid
+    const lx = cx + (cx / dist) * offsetDist;
+    const ly = cy + (cy / dist) * offsetDist;
+    zoneLabelEls[type].attr('x', lx).attr('y', ly);
+  });
+}
+
 const linkGroup = g.append('g');
 const nodeGroup = g.append('g');
 const labelGroup = g.append('g');
@@ -728,6 +776,8 @@ simulation.on('tick', () => {
   labelElements
     .attr('x', d => d.x)
     .attr('y', d => d.y);
+
+  updateZoneLabels();
 });
 
 // ── Helpers ───────────────────────────────────────────────────
