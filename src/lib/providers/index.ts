@@ -3,6 +3,7 @@ import { anthropic } from './anthropic';
 import { openai } from './openai';
 import { ollama } from './ollama';
 import { openrouter } from './openrouter';
+import { percival } from './percival';
 
 export type { ChatProvider, Model, ChatMessage, ChatConfig } from './types';
 export type {
@@ -22,6 +23,7 @@ const providers: Record<string, ChatProvider> = {
   openai,
   ollama,
   openrouter,
+  percival,
 };
 
 export function getProvider(id: string): ChatProvider {

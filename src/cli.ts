@@ -19,6 +19,7 @@ import { complianceExport } from './commands/compliance';
 import { chainRun, chainList as chainListCmd } from './commands/chain';
 import { iscCommand } from './commands/isc';
 import { map } from './commands/map';
+import { creditsBalance, creditsDeposit, creditsLimit, creditsMode } from './commands/credits';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { getFrameworkRoot } from './lib/paths';
@@ -270,6 +271,35 @@ isc
   .command('log')
   .description('Show ISC evolution history')
   .action(() => iscCommand('log', []));
+
+// ── Credits management ─────────────────────────────────────────
+
+const credits = program
+  .command('credits')
+  .description('Manage inference credits (balance, deposit, limits)');
+
+credits
+  .command('balance', { isDefault: true })
+  .description('Show credit balance and spend limits')
+  .action(creditsBalance);
+
+credits
+  .command('deposit <amount>')
+  .description('Create a Lightning deposit for <amount> sats')
+  .action(creditsDeposit);
+
+credits
+  .command('limit')
+  .description('Set spend limits')
+  .option('--daily <sats>', 'Daily limit in sats (or "none" to remove)')
+  .option('--weekly <sats>', 'Weekly limit in sats (or "none" to remove)')
+  .option('--monthly <sats>', 'Monthly limit in sats (or "none" to remove)')
+  .action(creditsLimit);
+
+credits
+  .command('mode [mode]')
+  .description('Get or set auth mode (transparent or private)')
+  .action(creditsMode);
 
 // ── Compliance ──────────────────────────────────────────────────
 
