@@ -24,7 +24,7 @@ import { botInit, BotInitError } from './commands/bot-init';
 function getVersion(): string {
   // Hardcoded — bun bundler breaks import.meta.url and getFrameworkRoot()
   // when installed globally. Bump this when bumping package.json version.
-  return '0.2.3';
+  return '0.2.4';
 }
 
 const program = new Command();
