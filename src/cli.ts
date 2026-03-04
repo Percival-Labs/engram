@@ -21,25 +21,10 @@ import { iscCommand } from './commands/isc';
 import { map } from './commands/map';
 import { creditsBalance, creditsDeposit, creditsLimit, creditsMode } from './commands/credits';
 import { botInit, BotInitError } from './commands/bot-init';
-import { readFileSync } from 'fs';
-import { join } from 'path';
-import { getFrameworkRoot } from './lib/paths';
-
 function getVersion(): string {
-  try {
-    // When bundled: dist/cli.js → up one level to package root
-    const { fileURLToPath } = require('url');
-    const { dirname: dn } = require('path');
-    const root = dn(dn(fileURLToPath(import.meta.url)));
-    const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf-8'));
-    if (pkg.name === 'engram-harness') return pkg.version || '0.0.0';
-  } catch { /* fall through */ }
-  try {
-    const pkg = JSON.parse(readFileSync(join(getFrameworkRoot(), 'package.json'), 'utf-8'));
-    return pkg.version || '0.0.0';
-  } catch {
-    return '0.2.2';
-  }
+  // Hardcoded — bun bundler breaks import.meta.url and getFrameworkRoot()
+  // when installed globally. Bump this when bumping package.json version.
+  return '0.2.3';
 }
 
 const program = new Command();
