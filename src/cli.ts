@@ -27,10 +27,18 @@ import { getFrameworkRoot } from './lib/paths';
 
 function getVersion(): string {
   try {
+    // When bundled: dist/cli.js → up one level to package root
+    const { fileURLToPath } = require('url');
+    const { dirname: dn } = require('path');
+    const root = dn(dn(fileURLToPath(import.meta.url)));
+    const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf-8'));
+    if (pkg.name === 'engram-harness') return pkg.version || '0.0.0';
+  } catch { /* fall through */ }
+  try {
     const pkg = JSON.parse(readFileSync(join(getFrameworkRoot(), 'package.json'), 'utf-8'));
     return pkg.version || '0.0.0';
   } catch {
-    return '0.1.3';
+    return '0.2.2';
   }
 }
 
