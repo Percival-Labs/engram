@@ -20,6 +20,7 @@ import { chainRun, chainList as chainListCmd } from './commands/chain';
 import { iscCommand } from './commands/isc';
 import { map } from './commands/map';
 import { creditsBalance, creditsDeposit, creditsLimit, creditsMode } from './commands/credits';
+import { botInit, BotInitError } from './commands/bot-init';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { getFrameworkRoot } from './lib/paths';
@@ -300,6 +301,30 @@ credits
   .command('mode [mode]')
   .description('Get or set auth mode (transparent or private)')
   .action(creditsMode);
+
+// ── Bot workspace management ──────────────────────────────────
+
+const bot = program
+  .command('bot')
+  .description('Manage bot workspaces');
+
+bot
+  .command('init <name>')
+  .description('Generate OpenClaw workspace from Engram harness')
+  .option('--harness <file>', 'Path to harness.md', './harness.md')
+  .option('-o, --output <dir>', 'Output directory')
+  .option('--register', 'Also register as Engram agent principal')
+  .action((name: string, opts: Record<string, unknown>) => {
+    try {
+      botInit(name, opts);
+    } catch (err) {
+      if (err instanceof BotInitError) {
+        console.error(`  \x1b[31mError:\x1b[0m ${err.message}`);
+        process.exit(err.code);
+      }
+      throw err;
+    }
+  });
 
 // ── Compliance ──────────────────────────────────────────────────
 
