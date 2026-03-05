@@ -3,6 +3,7 @@ import { homedir } from 'os';
 import { join } from 'path';
 import type { EngramConfig } from './config';
 import { getEngramHome } from './config';
+import { iscSystemInstructions } from './isc-runtime';
 
 export function buildSystemPrompt(config: EngramConfig): string {
   const parts: string[] = [];
@@ -25,6 +26,24 @@ export function buildSystemPrompt(config: EngramConfig): string {
     parts.push(`Humor: ${p.humor}/100, Curiosity: ${p.curiosity}/100, Precision: ${p.precision}/100`);
     parts.push(`Directness: ${p.directness}/100, Playfulness: ${p.playfulness}/100`);
     parts.push('');
+  }
+
+  // ISC instructions (always active)
+  parts.push(iscSystemInstructions());
+  parts.push('');
+
+  // Active ISC state (if exists)
+  const iscStatePath = join(home, 'isc', 'state.json');
+  if (existsSync(iscStatePath)) {
+    try {
+      const { ISCEngine } = require('./isc-runtime');
+      const engine = new ISCEngine(home);
+      parts.push('## Current ISC State');
+      parts.push(engine.inject());
+      parts.push('');
+    } catch {
+      // ISC state loading is best-effort
+    }
   }
 
   // User context

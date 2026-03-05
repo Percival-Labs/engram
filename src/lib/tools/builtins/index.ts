@@ -9,10 +9,12 @@ import { readFileTool } from './read-file';
 import { writeFileTool } from './write-file';
 import { editFileTool } from './edit-file';
 import { runCommandTool } from './run-command';
+import { iscToolHandler } from './isc-tool';
 
 export function registerBuiltins(registry: ToolRegistry): void {
   registry.register(readFileTool);
   registry.register(writeFileTool);
   registry.register(editFileTool);
   registry.register(runCommandTool);
+  registry.register(iscToolHandler);
 }
