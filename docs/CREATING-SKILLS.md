@@ -15,7 +15,7 @@ Examples of skills:
 ## Creating a Skill with the CLI
 
 ```bash
-pai skill create Summarize
+engram skill create Summarize
 ```
 
 This creates the following structure in your skills directory:
@@ -148,7 +148,7 @@ All skill names must use **TitleCase**. This is enforced by the CLI.
 After creating or modifying a skill, regenerate the index:
 
 ```bash
-pai skill index
+engram skill index
 ```
 
 This scans all skills, reads their frontmatter, and produces a `skill-index.json` that your AI uses for fast skill discovery.
@@ -172,7 +172,7 @@ Do not nest deeper than this. If a skill needs sub-categories, split it into mul
 
 1. Scaffold the skill:
    ```bash
-   pai skill create Summarize
+   engram skill create Summarize
    ```
 
 2. Edit `~/.claude/skills/Summarize/SKILL.md`:
@@ -186,7 +186,7 @@ Do not nest deeper than this. If a skill needs sub-categories, split it into mul
 
 4. Regenerate the index:
    ```bash
-   pai skill index
+   engram skill index
    ```
 
 5. Test it in your next AI session:
@@ -205,6 +205,6 @@ Use this when creating or reviewing a skill:
 - [ ] All referenced workflow files exist in `Workflows/`
 - [ ] At least 2 realistic examples are included
 - [ ] Directory structure is max 2 levels deep
-- [ ] Skill index has been regenerated (`pai skill index`)
+- [ ] Skill index has been regenerated (`engram skill index`)
 
 For the full specification, see [specs/SkillSystem.md](../specs/SkillSystem.md).

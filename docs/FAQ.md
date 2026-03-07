@@ -6,7 +6,7 @@ The Harness was designed for Claude Code, and the hook system (lifecycle events,
 
 ## Will this overwrite my existing settings?
 
-No. The `pai init` command runs in augment mode by default. It detects existing files and will not overwrite them. If you want a clean start, use `pai init --force`. You can also selectively install components (skills only, hooks only) without replacing your existing configuration.
+No. The `engram init` command runs in augment mode by default. It detects existing files and will not overwrite them. If you want a clean start, use `engram init --force`. You can also selectively install components (skills only, hooks only) without replacing your existing configuration.
 
 ## How many skills can I have?
 
@@ -14,7 +14,7 @@ There is no hard limit. Skills are indexed in a `skill-index.json` file that the
 
 ## Can I share skills with others?
 
-Yes. A skill is a self-contained directory (SKILL.md, Workflows/, Tools/). Copy the directory into another user's `~/.claude/skills/` folder, run `pai skill index`, and it works. No special packaging or registry required. Skills are plain markdown and YAML -- they are portable by design.
+Yes. A skill is a self-contained directory (SKILL.md, Workflows/, Tools/). Copy the directory into another user's `~/.claude/skills/` folder, run `engram skill index`, and it works. No special packaging or registry required. Skills are plain markdown and YAML -- they are portable by design.
 
 ## What if a hook crashes?
 
@@ -24,7 +24,7 @@ The system continues. Hooks follow a fail-open design: if a hook exits with an u
 
 1. Remove hook registrations from `~/.claude/settings.json` (delete the `hooks` entries)
 2. Delete the framework files you no longer want (`skills/`, `hooks/`, `MEMORY/`)
-3. Optionally, uninstall the CLI: `bun remove -g the-harness`
+3. Optionally, uninstall the CLI: `bun remove -g engram-harness`
 
 Your `CLAUDE.md`, `context.md`, and `constitution.md` files are yours to keep or remove as you choose. They work independently of the framework.
 
@@ -43,7 +43,7 @@ No. Skills and workflows are written in plain markdown. Personality and context 
 ## How do I update The Harness?
 
 ```bash
-bun update -g the-harness
+bun update -g engram-harness
 ```
 
 Framework updates ship new starter skills, hook templates, and CLI improvements. Your personal configuration (CLAUDE.md, context.md, constitution.md, custom skills, custom hooks) is never touched by updates. The framework and your configuration are separate concerns by design.

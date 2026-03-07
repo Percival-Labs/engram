@@ -17,15 +17,15 @@ bun --version   # Should print 1.x or later
 ## Installation
 
 ```bash
-bun add -g the-harness
+bun add -g engram-harness
 ```
 
-This installs the `pai` command globally.
+This installs the `engram` command globally.
 
-## Running `pai init`
+## Running `engram init`
 
 ```bash
-pai init
+engram init
 ```
 
 The init command walks you through an interactive setup. Here is what each question means:
@@ -38,7 +38,7 @@ The init command walks you through an interactive setup. Here is what each quest
 | **Install starter skills?** | Whether to copy the 4 included skills (Research, DoWork, Reflect, HelloWorld) into your config. Recommended for first-time setup. |
 | **Install starter hooks?** | Whether to install the 3 lifecycle hooks (SecurityValidator, LoadContext, SessionSummary). Recommended. |
 
-After answering, `pai init` creates the following structure in `~/.claude/`:
+After answering, `engram init` creates the following structure in `~/.claude/`:
 
 ```
 ~/.claude/
@@ -107,14 +107,14 @@ Try these to see the system in action:
 
 ## Troubleshooting
 
-**`pai: command not found`**
+**`engram: command not found`**
 Ensure Bun's global bin directory is in your PATH. Run `bun pm bin -g` to find the directory, then add it to your shell profile.
 
-**`pai init` says files already exist**
-The init command runs in augment mode by default -- it will not overwrite existing files. To start fresh, remove the existing `~/.claude/` directory first, or use `pai init --force`.
+**`engram init` says files already exist**
+The init command runs in augment mode by default -- it will not overwrite existing files. To start fresh, remove the existing `~/.claude/` directory first, or use `engram init --force`.
 
 **AI does not seem to use my skills**
-Run `pai skill index` to regenerate the skill index. The AI reads the index to discover available skills.
+Run `engram skill index` to regenerate the skill index. The AI reads the index to discover available skills.
 
 **Hooks are not firing**
 Check that your hooks are registered in `~/.claude/settings.json` under the `hooks` key, and that the hook files are executable (`chmod +x`).

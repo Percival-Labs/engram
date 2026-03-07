@@ -9,7 +9,7 @@ A skill that summarizes your calendar, weather, and top priorities into a mornin
 ### Create the skill
 
 ```bash
-pai skill create DailyBrief
+engram skill create DailyBrief
 ```
 
 ### Edit the SKILL.md
@@ -88,7 +88,7 @@ Generates a morning briefing.
 ### Register and index
 
 ```bash
-pai skill index
+engram skill index
 ```
 
 ---

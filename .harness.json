@@ -3,6 +3,6 @@
   "type": "project",
   "status": "active",
   "phase": "building",
-  "focus": "v0.1.3 live. OpenClaw export command shipped (engram export --format openclaw). Ian using Engram as harness for custom OpenClaw bot. Next: cross-platform loaders, content marketing.",
+  "focus": "v0.2.5 live. Core HTTP library, serve-http command, shopkeep template. Gateway + Vouch wired. Next: Desktop app integration, content marketing.",
   "description": "Personal AI infrastructure — the bridge between domain expertise and AI power. Audience: Domain Translators. Engram authors skills, OpenClaw runs them, Vouch verifies them."
 }

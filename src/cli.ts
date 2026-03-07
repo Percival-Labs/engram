@@ -94,6 +94,15 @@ program
   .action(serve);
 
 program
+  .command('serve-http')
+  .description('Start HTTP server for Desktop app and external clients')
+  .option('-p, --port <port>', 'Port number', '3939')
+  .action(async (opts: { port: string }) => {
+    const { serveHttp } = await import('./commands/serve-http');
+    await serveHttp({ port: parseInt(opts.port, 10) });
+  });
+
+program
   .command('map')
   .description('Visualize your Engram infrastructure as an interactive graph')
   .option('-o, --output <path>', 'Output HTML file path')

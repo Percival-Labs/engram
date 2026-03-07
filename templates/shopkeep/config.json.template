@@ -1,0 +1,19 @@
+{
+  "botName": "{{BOT_NAME}}",
+  "storefrontSlug": "{{STOREFRONT_SLUG}}",
+  "storefrontId": "{{STOREFRONT_ID}}",
+  "apiUrl": "{{API_URL}}",
+  "relayUrls": ["wss://relay.damus.io", "wss://nos.lol"],
+  "ownerPubkey": "{{OWNER_PUBKEY}}",
+  "features": {
+    "autoPublishNostr": true,
+    "autoNotifyOwner": true,
+    "customerSupport": true,
+    "analytics": true
+  },
+  "limits": {
+    "maxListings": 1000,
+    "maxDownloadsPerPurchase": 5,
+    "downloadExpiryDays": 7
+  }
+}
